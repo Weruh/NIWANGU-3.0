@@ -1,6 +1,0 @@
-{
-  "private": true,
-  "scripts": {
-    "build": "cd niwangu_website/frontend && npm install && npm run build"
-  }
-}
