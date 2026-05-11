@@ -7,8 +7,10 @@ import { TheKeys } from './components/TheKeys';
 import { TheRegistration } from './components/TheRegistration';
 import { AlignmentRitual } from './components/AlignmentRitual';
 import { TheEssence } from './components/TheEssence';
+import { ThePricing } from './components/ThePricing';
 import { TheGallery } from './components/TheGallery';
 import { TheParlor } from './components/TheParlor';
+import { TheProfile } from './components/TheProfile';
 
 const BootScreen = ({ message }: { message: string }) => (
   <div className="min-h-screen bg-midnight text-sandstone flex items-center justify-center p-6">
@@ -66,8 +68,10 @@ export default function App() {
         {view === 'register' && <TheRegistration key="register" />}
         {view === 'ritual' && <AlignmentRitual key="ritual" />}
         {view === 'essence' && <TheEssence key="essence" />}
+        {view === 'pricing' && <ThePricing key="pricing" />}
         {view === 'gallery' && <TheGallery key="gallery" />}
         {view === 'parlor' && <TheParlor key="parlor" />}
+        {view === 'profile' && <TheProfile key="profile" />}
       </AnimatePresence>
     </>
   );

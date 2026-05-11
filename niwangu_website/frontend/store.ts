@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   closeMatch,
-  finalizeProfileReadiness,
+  choosePricingPlan as choosePricingPlanRequest,
   getMyProfile,
   getMyRitualAnswers,
   getSession,
@@ -17,11 +17,12 @@ import {
   signOut as signOutRequest,
   signUpWithEmail,
   unlockPremium as unlockPremiumRequest,
+  updateMyProfile,
   uploadProfilePhoto,
   deleteProfilePhoto,
 } from './lib/api';
 import { isSupabaseConfigured } from './lib/supabase';
-import { CurrentUserProfile, Gender, ProfilePhoto, SignUpInput, SwipeDirection, UserProfile, ViewState, ChatSession } from './types';
+import { CurrentUserProfile, Gender, PricingPlan, ProfilePhoto, ProfileUpdateInput, SignUpInput, SwipeDirection, UserProfile, ViewState, ChatSession } from './types';
 
 const resolveAuthenticatedView = (
   profile: CurrentUserProfile,
@@ -32,6 +33,10 @@ const resolveAuthenticatedView = (
   }
 
   if (photoCount < 3 || !profile.profileReady) {
+    if (photoCount === 3 && !profile.profileReady) {
+      return 'pricing';
+    }
+
     return 'essence';
   }
 
@@ -69,11 +74,13 @@ interface SanctuaryStore {
   register: (input: SignUpInput) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  updateProfile: (input: ProfileUpdateInput) => Promise<boolean>;
   saveRitualAnswer: (step: number, answer: string) => Promise<void>;
   refreshPhotos: () => Promise<void>;
   uploadPhoto: (file: File, sortOrder: number) => Promise<void>;
   removePhoto: (photo: ProfilePhoto) => Promise<void>;
   completePhotoStep: () => Promise<void>;
+  choosePricingPlan: (plan: PricingPlan) => Promise<void>;
   loadGallery: () => Promise<void>;
   swipeProfile: (targetProfileId: string, direction: SwipeDirection) => Promise<{ matched: boolean }>;
   unlockPremium: () => Promise<void>;
@@ -104,7 +111,7 @@ const resetUnauthedState = (): Pick<
   photos: [],
   formData: {},
   ritualStep: 0,
-  dailySwipes: 10,
+  dailySwipes: 5,
   swipedCount: 0,
   isPremium: false,
   userLocation: '',
@@ -118,7 +125,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
   photos: [],
   galleryProfiles: [],
   activeChats: [],
-  dailySwipes: 10,
+  dailySwipes: 5,
   swipedCount: 0,
   isPremium: false,
   userLocation: '',
@@ -320,6 +327,38 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     }
   },
 
+  updateProfile: async (input) => {
+    const profile = get().currentProfile;
+
+    if (!profile) {
+      set({ errorMessage: 'You must be signed in to update your profile.' });
+      return false;
+    }
+
+    set({ isBusy: true, errorMessage: '', infoMessage: '' });
+
+    try {
+      await updateMyProfile(profile.id, input);
+      const refreshedProfile = await getMyProfile();
+
+      set({
+        currentProfile: refreshedProfile,
+        userLocation: refreshedProfile?.location ?? get().userLocation,
+        userGender: refreshedProfile?.gender ?? get().userGender,
+        isBusy: false,
+        infoMessage: 'Profile updated.',
+      });
+
+      return true;
+    } catch (error) {
+      set({
+        isBusy: false,
+        errorMessage: error instanceof Error ? error.message : 'Unable to update your profile.',
+      });
+      return false;
+    }
+  },
+
   saveRitualAnswer: async (step, answer) => {
     const profile = get().currentProfile;
 
@@ -436,11 +475,36 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     set({ isBusy: true, errorMessage: '' });
 
     try {
-      await finalizeProfileReadiness(profile.id);
+      set({
+        isBusy: false,
+        view: 'pricing',
+      });
+    } catch (error) {
+      set({
+        isBusy: false,
+        errorMessage: error instanceof Error ? error.message : 'Unable to finalize your profile.',
+      });
+    }
+  },
+
+  choosePricingPlan: async (plan) => {
+    const profile = get().currentProfile;
+
+    if (!profile) {
+      set({ errorMessage: 'You must be signed in to choose a plan.' });
+      return;
+    }
+
+    set({ isBusy: true, errorMessage: '' });
+
+    try {
+      await choosePricingPlanRequest(profile.id, plan);
       const refreshedProfile = await getMyProfile();
 
       set({
         currentProfile: refreshedProfile,
+        dailySwipes: refreshedProfile?.dailySwipeLimit ?? 5,
+        isPremium: plan === 'premium',
         isBusy: false,
         view: 'gallery',
       });
@@ -449,7 +513,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to finalize your profile.',
+        errorMessage: error instanceof Error ? error.message : 'Unable to choose that plan.',
       });
     }
   },
@@ -532,8 +596,11 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({
         currentProfile: refreshedProfile,
         isPremium: true,
+        dailySwipes: refreshedProfile?.dailySwipeLimit ?? 5,
         isBusy: false,
       });
+
+      await get().loadGallery();
     } catch (error) {
       set({
         isBusy: false,

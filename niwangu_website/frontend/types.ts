@@ -1,5 +1,6 @@
-export type ViewState = 'home' | 'auth' | 'register' | 'ritual' | 'essence' | 'gallery' | 'parlor';
+export type ViewState = 'home' | 'auth' | 'register' | 'ritual' | 'essence' | 'pricing' | 'gallery' | 'parlor' | 'profile';
 export type Gender = 'female' | 'male';
+export type PricingPlan = 'free' | 'premium';
 export type SwipeDirection = 'like' | 'pass';
 
 export interface UserProfile {
@@ -29,6 +30,18 @@ export interface CurrentUserProfile {
   profileReady: boolean;
   isPremium: boolean;
   dailySwipeLimit: number;
+}
+
+export interface ProfileUpdateInput {
+  name: string;
+  age: number;
+  gender: Gender;
+  seekingGender: Gender;
+  location: string;
+  intent: string;
+  coreValue: string;
+  whyNiwangu: string;
+  boundary: string;
 }
 
 export interface ProfilePhoto {

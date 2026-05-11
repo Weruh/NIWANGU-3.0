@@ -43,7 +43,7 @@ create table if not exists public.profiles (
   onboarding_completed boolean not null default false,
   profile_ready boolean not null default false,
   is_premium boolean not null default false,
-  daily_swipe_limit integer not null default 10,
+  daily_swipe_limit integer not null default 5,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -297,7 +297,7 @@ begin
   where actor_profile_id = v_actor_profile_id
     and created_at::date = timezone('utc', now())::date;
 
-  if not coalesce(v_is_premium, false) and v_swipe_count >= coalesce(v_daily_limit, 10) then
+  if not coalesce(v_is_premium, false) and v_swipe_count >= coalesce(v_daily_limit, 5) then
     raise exception 'daily_limit_reached';
   end if;
 
@@ -346,7 +346,7 @@ begin
   select
     v_new_match_id is not null,
     v_new_match_id,
-    greatest(0, coalesce(v_daily_limit, 10) - v_swipe_count);
+    greatest(0, coalesce(v_daily_limit, 5) - v_swipe_count);
 end;
 $$;
 

@@ -5,6 +5,7 @@ import { useSanctuaryStore } from '../store';
 import { ArrowLeft, Send, Sprout, Flower, XCircle } from 'lucide-react';
 import { ChatSession, Message } from '../types';
 import { listMatchMessages, subscribeToMatchChanges, subscribeToMatchMessages } from '../lib/api';
+import { ProfileMenu } from './ProfileMenu';
 
 export const TheParlor: FC = () => {
   const { activeChats, chatsLoading, currentProfile, loadChats, sendMessage, closeConnection, setView } = useSanctuaryStore(useShallow((state) => ({
@@ -79,11 +80,14 @@ const ChatList: FC<{
       exit={{ opacity: 0, x: -20 }}
       className="flex-1 p-6"
     >
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={onBack} className="p-2 -ml-2 hover:bg-black/5 rounded-full">
-          <ArrowLeft className="text-midnight" />
-        </button>
-        <h2 className="font-serif text-3xl text-midnight">The Parlor</h2>
+      <div className="flex items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="p-2 -ml-2 hover:bg-black/5 rounded-full">
+            <ArrowLeft className="text-midnight" />
+          </button>
+          <h2 className="font-serif text-3xl text-midnight">The Parlor</h2>
+        </div>
+        <ProfileMenu />
       </div>
 
       {loading && chats.length === 0 ? (

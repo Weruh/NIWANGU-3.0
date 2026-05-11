@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
 import { Heart, X, Lock } from 'lucide-react';
+import { ProfileMenu } from './ProfileMenu';
 
 export const TheGallery: FC = () => {
   const {
@@ -98,9 +99,10 @@ export const TheGallery: FC = () => {
   const handlePayment = () => {
     setPaymentProcessing(true);
     setTimeout(() => {
-      void unlockPremium();
-      setPaymentProcessing(false);
-      setShowPaywall(false);
+      void unlockPremium().finally(() => {
+        setPaymentProcessing(false);
+        setShowPaywall(false);
+      });
     }, 1800);
   };
 
@@ -134,12 +136,18 @@ export const TheGallery: FC = () => {
     <div className="h-screen bg-sandstone relative overflow-hidden flex flex-col">
       <div className="absolute top-0 left-0 right-0 z-50 p-4 flex justify-between items-center pointer-events-none">
         <h1 className="font-serif text-xl text-sandstone drop-shadow-md">Niwangu</h1>
-        <button
-          onClick={() => setView('parlor')}
-          className="bg-sandstone/10 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full text-xs font-medium pointer-events-auto hover:bg-sandstone/20 transition-all"
-        >
-          Parlor ({activeChats.length})
-        </button>
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="rounded-full border border-white/20 bg-sandstone/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md">
+            {isPremium ? 'Premium: 5 partner matches' : `${Math.max(0, dailySwipes - swipedCount)} swipes left`}
+          </div>
+          <button
+            onClick={() => setView('parlor')}
+            className="bg-sandstone/10 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-sandstone/20 transition-all"
+          >
+            Parlor ({activeChats.length})
+          </button>
+          <ProfileMenu light />
+        </div>
       </div>
 
       <AnimatePresence>
@@ -154,7 +162,7 @@ export const TheGallery: FC = () => {
               <Lock className="w-12 h-12 text-midnight mx-auto mb-4" />
               <h2 className="font-serif text-2xl text-midnight mb-2">Commitment Pass</h2>
               <p className="text-midnight/70 mb-6 text-sm">
-                You have reached your daily limit of intentional connections. This upgrade now persists on your profile in Supabase.
+                You have reached your 5 free swipes for today. Upgrade for 2000 KSH to receive 5 profiles matched to the partner you want.
               </p>
               <Button
                 onClick={handlePayment}
@@ -204,7 +212,7 @@ export const TheGallery: FC = () => {
         >
           <div className="h-[60vh] w-full snap-start" />
 
-          <div className="min-h-[60vh] bg-gradient-to-t from-midnight via-midnight/90 to-transparent pt-20 pb-32 px-6 flex flex-col justify-end text-sandstone snap-start">
+          <div className="min-h-[60vh] bg-gradient-to-t from-midnight/70 via-midnight/45 to-transparent pt-20 pb-32 px-6 flex flex-col justify-end text-sandstone snap-start">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} className="max-w-md mx-auto w-full">
               <span className="inline-block px-3 py-1 border border-sandstone/30 rounded-full text-xs mb-4 uppercase tracking-widest">
                 {currentProfile.ritualAnswers[1]}

@@ -5,7 +5,9 @@ import {
   Gender,
   MatchMessageRow,
   Message,
+  PricingPlan,
   ProfilePhoto,
+  ProfileUpdateInput,
   SignUpInput,
   SwipeDirection,
   SwipeResult,
@@ -92,7 +94,7 @@ const mapProfile = (row: ProfileRow): CurrentUserProfile => ({
   onboardingCompleted: Boolean(row.onboarding_completed),
   profileReady: Boolean(row.profile_ready),
   isPremium: Boolean(row.is_premium),
-  dailySwipeLimit: row.daily_swipe_limit ?? 10,
+  dailySwipeLimit: row.daily_swipe_limit ?? 5,
 });
 
 const mapPhoto = (row: PhotoRow): ProfilePhoto => ({
@@ -222,6 +224,28 @@ export const getMyProfile = async (): Promise<CurrentUserProfile | null> => {
   }
 
   return mapProfile(data as ProfileRow);
+};
+
+export const updateMyProfile = async (profileId: string, input: ProfileUpdateInput) => {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      full_name: input.name,
+      age: input.age,
+      gender: input.gender,
+      seeking_gender: input.seekingGender,
+      location: input.location,
+      intent: input.intent,
+      core_value: input.coreValue,
+      why_niwangu: input.whyNiwangu,
+      boundary: input.boundary,
+    })
+    .eq('id', profileId);
+
+  if (error) {
+    throw error;
+  }
 };
 
 export const getMyRitualAnswers = async (profileId: string) => {
@@ -388,9 +412,28 @@ export const finalizeProfileReadiness = async (profileId: string) => {
   }
 };
 
+export const choosePricingPlan = async (profileId: string, plan: PricingPlan) => {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      profile_ready: true,
+      is_premium: plan === 'premium',
+      daily_swipe_limit: 5,
+    })
+    .eq('id', profileId);
+
+  if (error) {
+    throw error;
+  }
+};
+
 export const listGalleryProfiles = async () => {
   const supabase = getSupabase();
-  const { data, error } = await supabase.rpc('get_gallery_profiles', { limit_count: 20 });
+  const profile = await getMyProfile();
+  const { data, error } = await supabase.rpc('get_gallery_profiles', {
+    limit_count: profile?.isPremium ? 5 : 20,
+  });
 
   if (error) {
     throw error;
@@ -446,7 +489,7 @@ export const unlockPremium = async (profileId: string) => {
   const supabase = getSupabase();
   const { error } = await supabase
     .from('profiles')
-    .update({ is_premium: true })
+    .update({ is_premium: true, daily_swipe_limit: 5 })
     .eq('id', profileId);
 
   if (error) {
