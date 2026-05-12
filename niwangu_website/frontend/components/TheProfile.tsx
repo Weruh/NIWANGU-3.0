@@ -5,6 +5,8 @@ import { ArrowLeft, Camera } from 'lucide-react';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
 import type { Gender } from '../types';
+import { TOWN_OPTIONS, normalizeTown } from '../lib/towns';
+import { OptimizedImage } from './OptimizedImage';
 
 export const TheProfile: FC = () => {
   const { currentProfile, photos, isBusy, updateProfile, refreshPhotos, setView } = useSanctuaryStore(useShallow((state) => ({
@@ -25,7 +27,7 @@ export const TheProfile: FC = () => {
   const [coreValue, setCoreValue] = useState('');
   const [whyNiwangu, setWhyNiwangu] = useState('');
   const [boundary, setBoundary] = useState('');
-  const [localError, setLocalError] = useState('');
+  const [localErrors, setLocalErrors] = useState<string[]>([]);
 
   useEffect(() => {
     void refreshPhotos();
@@ -40,7 +42,7 @@ export const TheProfile: FC = () => {
     setAge(currentProfile.age ? String(currentProfile.age) : '');
     setGender(currentProfile.gender || 'female');
     setSeekingGender(currentProfile.seekingGender || 'male');
-    setLocation(currentProfile.location);
+    setLocation(normalizeTown(currentProfile.location));
     setIntent(currentProfile.intent);
     setCoreValue(currentProfile.coreValue);
     setWhyNiwangu(currentProfile.whyNiwangu);
@@ -50,13 +52,18 @@ export const TheProfile: FC = () => {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const parsedAge = Number(age);
+    const validationErrors = [
+      name.trim().length < 2 ? 'Full name must be at least 2 characters.' : '',
+      !Number.isFinite(parsedAge) || parsedAge < 18 ? 'Age must be 18 or older.' : '',
+      !location ? 'Select your town.' : '',
+    ].filter(Boolean);
 
-    if (name.trim().length < 2 || !Number.isFinite(parsedAge) || parsedAge < 18 || location.trim().length < 3) {
-      setLocalError('Please add a name, a valid 18+ age, and your location.');
+    if (validationErrors.length > 0) {
+      setLocalErrors(validationErrors);
       return;
     }
 
-    setLocalError('');
+    setLocalErrors([]);
     await updateProfile({
       name: name.trim(),
       age: parsedAge,
@@ -107,7 +114,7 @@ export const TheProfile: FC = () => {
                 return (
                   <div key={slot} className="aspect-[3/4] overflow-hidden rounded-md bg-midnight/10">
                     {photo ? (
-                      <img src={photo.url} alt="Profile" className="h-full w-full object-cover" />
+                      <OptimizedImage src={photo.url} alt="Profile" srcWidth={320} srcSetWidths={[240, 320, 480]} sizes="110px" className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-midnight/35">
                         <Camera className="h-5 w-5" />
@@ -144,7 +151,27 @@ export const TheProfile: FC = () => {
               </label>
 
               <div className="md:col-span-2">
-                <Field label="Location" value={location} onChange={setLocation} />
+                <label className="flex flex-col gap-2 text-sm font-medium text-midnight/80">
+                  Town
+                  <select
+                    value={location}
+                    onChange={(event) => {
+                      setLocation(event.target.value);
+                      if (localErrors.length) setLocalErrors([]);
+                    }}
+                    className="rounded-md border border-midnight/15 bg-white/60 px-3 py-3 text-midnight focus:outline-none focus:border-sage"
+                  >
+                    <option value="">Select your town</option>
+                    {location && !TOWN_OPTIONS.includes(location) && (
+                      <option value={location}>{location}</option>
+                    )}
+                    {TOWN_OPTIONS.map((town) => (
+                      <option key={town} value={town}>
+                        {town}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <Field label="Intent" value={intent} onChange={setIntent} />
@@ -161,7 +188,13 @@ export const TheProfile: FC = () => {
               </label>
             </div>
 
-            {localError && <p className="mt-4 text-sm text-red-900">{localError}</p>}
+            {localErrors.length > 0 && (
+              <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-red-900">
+                {localErrors.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            )}
 
             <div className="mt-6 flex justify-end">
               <Button type="submit" disabled={isBusy}>

@@ -338,17 +338,60 @@ const fileExtension = (fileName: string) => {
   return parts.length > 1 ? parts.pop() : 'jpg';
 };
 
+const prepareProfilePhoto = async (file: File) => {
+  if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+    return file;
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 1400;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      bitmap.close();
+      return file;
+    }
+
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/jpeg', 0.82);
+    });
+
+    if (!blob || blob.size >= file.size) {
+      return file;
+    }
+
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'photo'}.jpg`, {
+      type: 'image/jpeg',
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  }
+};
+
 export const uploadProfilePhoto = async (profileId: string, file: File, sortOrder: number) => {
   const user = await getCurrentUser();
   const supabase = getSupabase();
-  const ext = fileExtension(file.name || 'photo.jpg');
+  const uploadFile = await prepareProfilePhoto(file);
+  const ext = fileExtension(uploadFile.name || 'photo.jpg');
   const storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from(PROFILE_PHOTO_BUCKET)
-    .upload(storagePath, file, {
-      cacheControl: '3600',
+    .upload(storagePath, uploadFile, {
+      cacheControl: '31536000',
       upsert: false,
+      contentType: uploadFile.type || 'image/jpeg',
     });
 
   if (uploadError) {

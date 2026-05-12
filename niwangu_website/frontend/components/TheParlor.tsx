@@ -6,6 +6,7 @@ import { ArrowLeft, Send, Sprout, Flower, XCircle } from 'lucide-react';
 import { ChatSession, Message } from '../types';
 import { listMatchMessages, subscribeToMatchChanges, subscribeToMatchMessages } from '../lib/api';
 import { ProfileMenu } from './ProfileMenu';
+import { OptimizedImage } from './OptimizedImage';
 
 export const TheParlor: FC = () => {
   const { activeChats, chatsLoading, currentProfile, loadChats, sendMessage, closeConnection, setView } = useSanctuaryStore(useShallow((state) => ({
@@ -102,7 +103,7 @@ const ChatList: FC<{
               onClick={() => !chat.isClosed && onSelect(chat.id)}
               className={`p-4 rounded-xl border ${chat.isClosed ? 'bg-gray-100 border-gray-200 opacity-60 cursor-not-allowed' : 'bg-white/50 border-white/40 hover:border-sage cursor-pointer'} transition-all flex items-center gap-4`}
             >
-              <img src={chat.partnerPhoto} alt={chat.partnerName} className="w-12 h-12 rounded-full object-cover" />
+              <OptimizedImage src={chat.partnerPhoto} alt={chat.partnerName} srcWidth={96} srcSetWidths={[64, 96, 128]} sizes="48px" className="w-12 h-12 rounded-full object-cover" />
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
                   <h3 className="font-serif text-lg text-midnight">{chat.partnerName}</h3>
@@ -197,7 +198,7 @@ const ChatWindow: FC<{
           <button onClick={onBack} className="p-1 hover:bg-black/5 rounded-full">
             <ArrowLeft className="w-5 h-5 text-midnight" />
           </button>
-          <img src={chat.partnerPhoto} alt={chat.partnerName} className="w-8 h-8 rounded-full object-cover" />
+          <OptimizedImage src={chat.partnerPhoto} alt={chat.partnerName} srcWidth={64} srcSetWidths={[48, 64, 96]} sizes="32px" className="w-8 h-8 rounded-full object-cover" />
           <div>
             <h3 className="font-serif text-midnight leading-none">{chat.partnerName}</h3>
             <div className="flex items-center gap-1 text-[10px] text-midnight/50 uppercase tracking-wider mt-0.5">

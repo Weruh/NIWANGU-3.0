@@ -5,6 +5,8 @@ import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
 import { Heart, X, Lock } from 'lucide-react';
 import { ProfileMenu } from './ProfileMenu';
+import { OptimizedImage } from './OptimizedImage';
+import { optimizeImageUrl } from '../lib/images';
 
 export const TheGallery: FC = () => {
   const {
@@ -51,7 +53,21 @@ export const TheGallery: FC = () => {
   }, [currentProfileIndex, galleryProfiles.length]);
 
   const currentProfile = galleryProfiles[currentProfileIndex] ?? null;
+  const currentPhoto = currentProfile?.photos[0] ?? null;
   const isLimitReached = !isPremium && swipedCount >= dailySwipes;
+
+  useEffect(() => {
+    const nextPhotos = galleryProfiles
+      .slice(currentProfileIndex + 1, currentProfileIndex + 3)
+      .map((profile) => profile.photos[0])
+      .filter(Boolean);
+
+    nextPhotos.forEach((photoUrl) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = optimizeImageUrl(photoUrl, 960);
+    });
+  }, [currentProfileIndex, galleryProfiles]);
 
   const resetCardState = () => {
     setBlurAmount(20);
@@ -197,11 +213,20 @@ export const TheGallery: FC = () => {
       </AnimatePresence>
 
       <div className="relative w-full h-full">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-all duration-100 ease-out"
+        <OptimizedImage
+          key={currentProfile.id}
+          src={currentPhoto}
+          alt=""
+          aria-hidden="true"
+          loading="eager"
+          fetchPriority="high"
+          srcWidth={1280}
+          srcSetWidths={[640, 960, 1280]}
+          sizes="100vw"
+          className="absolute inset-0 h-full w-full object-cover transition-all duration-100 ease-out"
           style={{
-            backgroundImage: `url(${currentProfile.photos[0]})`,
             filter: `blur(${blurAmount}px) brightness(${0.7 + (1 - blurAmount / 20) * 0.3})`,
+            transform: 'scale(1.04)',
           }}
         />
 

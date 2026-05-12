@@ -5,6 +5,7 @@ import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
 import { Plus, X } from 'lucide-react';
 import { ProfilePhoto } from '../types';
+import { OptimizedImage } from './OptimizedImage';
 
 export const TheEssence: FC = () => {
   const { photos, uploadPhoto, removePhoto, completePhotoStep, isBusy } = useSanctuaryStore(useShallow((state) => ({
@@ -49,7 +50,7 @@ export const TheEssence: FC = () => {
               >
                 {photo ? (
                   <>
-                    <img src={photo.url} alt="Essence" className="w-full h-full object-cover" />
+                    <OptimizedImage src={photo.url} alt="Essence" srcWidth={480} srcSetWidths={[320, 480, 640]} sizes="(min-width: 768px) 33vw, 100vw" className="w-full h-full object-cover" />
                     <button
                       onClick={() => {
                         void handleRemove(photo);

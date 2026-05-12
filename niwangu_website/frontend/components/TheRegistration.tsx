@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
 import { ArrowLeft } from 'lucide-react';
+import { TOWN_OPTIONS } from '../lib/towns';
 
 export const TheRegistration: FC = () => {
   const { setView, register, isBusy, clearMessages } = useSanctuaryStore(useShallow((state) => ({
@@ -18,7 +19,7 @@ export const TheRegistration: FC = () => {
   const [location, setLocation] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
   const formControls = useAnimation();
 
   const handleSubmit = async (e: FormEvent) => {
@@ -27,23 +28,17 @@ export const TheRegistration: FC = () => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPassword = password.trim();
     const parsedAge = Number(age);
+    const validationErrors = [
+      normalizedName.length < 2 ? 'Full name must be at least 2 characters.' : '',
+      !Number.isFinite(parsedAge) || parsedAge < 18 ? 'Age must be 18 or older.' : '',
+      gender !== 'female' && gender !== 'male' ? 'Select your gender.' : '',
+      !location ? 'Select your town.' : '',
+      normalizedEmail.length < 4 || !normalizedEmail.includes('@') ? 'Enter a valid email address.' : '',
+      normalizedPassword.length < 6 ? 'Password must be at least 6 characters.' : '',
+    ].filter(Boolean);
 
-    const locationParts = location.split(',').map((part) => part.trim()).filter(Boolean);
-    const hasTownAndCountry = locationParts.length >= 2;
-
-    const isValid =
-      normalizedName.length > 1 &&
-      normalizedEmail.length > 3 &&
-      normalizedPassword.length >= 6 &&
-      (gender === 'female' || gender === 'male') &&
-      hasTownAndCountry &&
-      Number.isFinite(parsedAge) &&
-      parsedAge >= 18;
-
-    if (!isValid) {
-      setError(
-        'Please complete all fields. Use "Town, Country" for location. Age must be 18+ and password at least 6 characters.',
-      );
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
       await formControls.start({
         x: [0, -10, 10, -8, 8, -4, 4, 0],
         transition: { duration: 0.4 },
@@ -51,7 +46,7 @@ export const TheRegistration: FC = () => {
       return;
     }
 
-    setError('');
+    setErrors([]);
     clearMessages();
     await register({
       fullName: normalizedName,
@@ -98,7 +93,7 @@ export const TheRegistration: FC = () => {
               value={fullName}
               onChange={(e) => {
                 setFullName(e.target.value);
-                if (error) setError('');
+                if (errors.length) setErrors([]);
               }}
               className="bg-transparent border-b border-midnight/30 py-2 focus:outline-none focus:border-sage text-midnight transition-colors"
               placeholder="Your full name"
@@ -114,7 +109,7 @@ export const TheRegistration: FC = () => {
               value={age}
               onChange={(e) => {
                 setAge(e.target.value);
-                if (error) setError('');
+                if (errors.length) setErrors([]);
               }}
               className="bg-transparent border-b border-midnight/30 py-2 focus:outline-none focus:border-sage text-midnight transition-colors"
               placeholder="18+"
@@ -127,7 +122,7 @@ export const TheRegistration: FC = () => {
               value={gender}
               onChange={(e) => {
                 setGender(e.target.value);
-                if (error) setError('');
+                if (errors.length) setErrors([]);
               }}
               className="bg-transparent border-b border-midnight/30 py-2 focus:outline-none focus:border-sage text-midnight transition-colors"
             >
@@ -138,17 +133,22 @@ export const TheRegistration: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Location (Town, Country)</label>
-            <input
-              type="text"
+            <label className="text-sm font-medium text-midnight/80">Town</label>
+            <select
               value={location}
               onChange={(e) => {
                 setLocation(e.target.value);
-                if (error) setError('');
+                if (errors.length) setErrors([]);
               }}
               className="bg-transparent border-b border-midnight/30 py-2 focus:outline-none focus:border-sage text-midnight transition-colors"
-              placeholder="Town, Country"
-            />
+            >
+              <option value="">Select your town</option>
+              {TOWN_OPTIONS.map((town) => (
+                <option key={town} value={town}>
+                  {town}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -158,7 +158,7 @@ export const TheRegistration: FC = () => {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                if (error) setError('');
+                if (errors.length) setErrors([]);
               }}
               className="bg-transparent border-b border-midnight/30 py-2 focus:outline-none focus:border-sage text-midnight transition-colors"
               placeholder="you@example.com"
@@ -172,14 +172,20 @@ export const TheRegistration: FC = () => {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                if (error) setError('');
+                if (errors.length) setErrors([]);
               }}
               className="bg-transparent border-b border-midnight/30 py-2 focus:outline-none focus:border-sage text-midnight transition-colors"
               placeholder="********"
             />
           </div>
 
-          {error && <p className="text-sm text-red-800">{error}</p>}
+          {errors.length > 0 && (
+            <ul className="list-disc space-y-1 pl-5 text-sm text-red-800">
+              {errors.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          )}
 
           <Button type="submit" className="mt-2" disabled={isBusy}>
             {isBusy ? 'Creating account...' : 'Continue to Rituals'}

@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { motion } from 'framer-motion';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
+import { OptimizedImage } from './OptimizedImage';
 
 const NiwanguLogo = () => (
   <svg 
@@ -45,9 +46,13 @@ export const SanctuaryGate: FC = () => {
     >
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        <img 
+        <OptimizedImage
           src="https://images.unsplash.com/photo-1624228652368-1cae5a2cf47c?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
           alt="Black couple sharing a moment" 
+          loading="eager"
+          fetchPriority="high"
+          srcWidth={1280}
+          srcSetWidths={[640, 960, 1280]}
           className="w-full h-full object-cover opacity-100"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/10"></div>
