@@ -520,49 +520,8 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare
-  v_partner_profile_id uuid;
-  v_sender_auth_user_id uuid;
-  v_partner_auth_user_id uuid;
-  v_reply text;
-  v_replies text[] := array[
-    'I appreciate that clarity. What kind of relationship rhythm feels healthiest to you?',
-    'That resonates with me. What does emotional safety look like for you in practice?',
-    'Intentionality matters to me too. What are you protecting in this season of life?',
-    'I value that answer. What would help a connection feel grounded instead of rushed?'
-  ];
 begin
-  if new.is_system then
-    return new;
-  end if;
-
-  select auth_user_id
-  into v_sender_auth_user_id
-  from public.profiles
-  where id = new.sender_profile_id;
-
-  select case
-    when m.profile_low_id = new.sender_profile_id then m.profile_high_id
-    else m.profile_low_id
-  end
-  into v_partner_profile_id
-  from public.matches m
-  where m.id = new.match_id;
-
-  select auth_user_id
-  into v_partner_auth_user_id
-  from public.profiles
-  where id = v_partner_profile_id;
-
-  if v_sender_auth_user_id is null or v_partner_auth_user_id is not null then
-    return new;
-  end if;
-
-  v_reply := v_replies[1 + floor(random() * array_length(v_replies, 1))::integer];
-
-  insert into public.messages (match_id, sender_profile_id, body)
-  values (new.match_id, v_partner_profile_id, v_reply);
-
+  -- Auto-seeded replies are disabled.
   return new;
 end;
 $$;
