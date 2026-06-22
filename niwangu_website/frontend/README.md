@@ -21,7 +21,8 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 3. Apply the SQL backend files in your Supabase project:
    `../supabase/migrations/20260421_initial.sql`
-   `../supabase/seed.sql`
+   `../supabase/migrations/20260511_pricing_plans.sql`
+   `../supabase/migrations/20260622090838_remove_seeded_dummy_profiles.sql`
 4. Run the app:
    `npm run dev`
 
@@ -29,4 +30,3 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 - Registration uses Supabase Auth email/password.
 - If your Supabase project requires email confirmation, new users will be sent back to the sign-in screen until they confirm their email.
-- Seeded profiles are inserted by `supabase/seed.sql` so the gallery has real data immediately.

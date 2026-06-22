@@ -3,7 +3,8 @@
 Apply the SQL files in this order inside your Supabase project SQL editor:
 
 1. `supabase/migrations/20260421_initial.sql`
-2. `supabase/seed.sql`
+2. `supabase/migrations/20260511_pricing_plans.sql`
+3. `supabase/migrations/20260622090838_remove_seeded_dummy_profiles.sql`
 
 Then set these frontend environment variables in `frontend/.env.local`:
 

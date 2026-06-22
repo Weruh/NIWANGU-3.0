@@ -135,7 +135,7 @@ export const TheGallery: FC = () => {
       <div className="h-screen bg-midnight text-sandstone flex flex-col items-center justify-center p-6 text-center">
         <h2 className="font-serif text-4xl mb-4">The Gallery Is Quiet</h2>
         <p className="text-sandstone/70 max-w-md mb-8">
-          You have reached the end of the current candidate set. Seed more profiles in Supabase or return shortly.
+          You have reached the end of the current candidate set. Return shortly as more members join.
         </p>
         <Button
           onClick={() => {

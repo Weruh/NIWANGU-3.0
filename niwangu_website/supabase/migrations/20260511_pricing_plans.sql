@@ -20,7 +20,6 @@ set search_path = public
 as $$
 declare
   v_actor_profile_id uuid := public.current_profile_id();
-  v_target_auth_user_id uuid;
   v_is_premium boolean;
   v_daily_limit integer;
   v_swipe_count integer;
@@ -55,33 +54,17 @@ begin
     set direction = excluded.direction,
         created_at = timezone('utc', now());
 
-  select auth_user_id
-  into v_target_auth_user_id
-  from public.profiles
-  where id = p_target_profile_id;
-
-  if p_direction = 'like' and (
-    v_target_auth_user_id is null or exists (
+  if p_direction = 'like' and exists (
       select 1
       from public.swipes reverse_swipe
       where reverse_swipe.actor_profile_id = p_target_profile_id
         and reverse_swipe.target_profile_id = v_actor_profile_id
         and reverse_swipe.direction = 'like'
-    )
   ) then
     insert into public.matches (profile_low_id, profile_high_id)
     values (least(v_actor_profile_id, p_target_profile_id), greatest(v_actor_profile_id, p_target_profile_id))
     on conflict (profile_low_id, profile_high_id) do nothing
     returning id into v_new_match_id;
-
-    if v_new_match_id is not null and v_target_auth_user_id is null then
-      insert into public.messages (match_id, sender_profile_id, body)
-      values (
-        v_new_match_id,
-        p_target_profile_id,
-        'I appreciate intentional energy. What stood out to you in my profile?'
-      );
-    end if;
   end if;
 
   select count(*)
