@@ -102,7 +102,7 @@ begin
   into v_swipe_count
   from public.swipes
   where actor_profile_id = v_actor_profile_id
-    and created_at::date = timezone('utc', now())::date;
+    and timezone('utc', created_at)::date = timezone('utc', now())::date;
 
   if not coalesce(v_is_premium, false) and v_swipe_count >= coalesce(v_daily_limit, 5) then
     raise exception 'daily_limit_reached';
@@ -111,8 +111,7 @@ begin
   insert into public.swipes (actor_profile_id, target_profile_id, direction)
   values (v_actor_profile_id, p_target_profile_id, p_direction)
   on conflict (actor_profile_id, target_profile_id) do update
-    set direction = excluded.direction,
-        created_at = timezone('utc', now());
+    set direction = excluded.direction;
 
   if p_direction = 'like' and exists (
       select 1
@@ -131,7 +130,7 @@ begin
   into v_swipe_count
   from public.swipes
   where actor_profile_id = v_actor_profile_id
-    and created_at::date = timezone('utc', now())::date;
+    and timezone('utc', created_at)::date = timezone('utc', now())::date;
 
   return query
   select
