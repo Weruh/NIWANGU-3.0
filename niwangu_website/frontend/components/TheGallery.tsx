@@ -3,17 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
-import { Heart, X, Lock } from 'lucide-react';
+import { Heart, X } from 'lucide-react';
 import { ProfileMenu } from './ProfileMenu';
 import { OptimizedImage } from './OptimizedImage';
 import { optimizeImageUrl } from '../lib/images';
+import { PaymentWindow } from './PaymentWindow';
 
 export const TheGallery: FC = () => {
   const {
     galleryProfiles,
     galleryLoading,
-    swipedCount,
-    dailySwipes,
+    profileViewsUsed,
+    dailyProfileViews,
+    paymentRequired,
+    paymentAmountKsh,
+    profileViewLockUntil,
     isPremium,
     unlockPremium,
     swipeProfile,
@@ -23,8 +27,11 @@ export const TheGallery: FC = () => {
   } = useSanctuaryStore(useShallow((state) => ({
     galleryProfiles: state.galleryProfiles,
     galleryLoading: state.galleryLoading,
-    swipedCount: state.swipedCount,
-    dailySwipes: state.dailySwipes,
+    profileViewsUsed: state.profileViewsUsed,
+    dailyProfileViews: state.dailyProfileViews,
+    paymentRequired: state.paymentRequired,
+    paymentAmountKsh: state.paymentAmountKsh,
+    profileViewLockUntil: state.profileViewLockUntil,
     isPremium: state.isPremium,
     unlockPremium: state.unlockPremium,
     swipeProfile: state.swipeProfile,
@@ -41,10 +48,10 @@ export const TheGallery: FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (galleryProfiles.length === 0) {
+    if (galleryProfiles.length === 0 && !galleryLoading) {
       void loadGallery();
     }
-  }, [galleryProfiles.length, loadGallery]);
+  }, [galleryLoading, galleryProfiles.length, loadGallery]);
 
   useEffect(() => {
     if (currentProfileIndex >= galleryProfiles.length) {
@@ -54,7 +61,6 @@ export const TheGallery: FC = () => {
 
   const currentProfile = galleryProfiles[currentProfileIndex] ?? null;
   const currentPhoto = currentProfile?.photos[0] ?? null;
-  const isLimitReached = !isPremium && swipedCount >= dailySwipes;
 
   useEffect(() => {
     const nextPhotos = galleryProfiles
@@ -93,11 +99,6 @@ export const TheGallery: FC = () => {
       return;
     }
 
-    if (isLimitReached) {
-      setShowPaywall(true);
-      return;
-    }
-
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
@@ -131,6 +132,19 @@ export const TheGallery: FC = () => {
   }
 
   if (!currentProfile) {
+    if (paymentRequired && !isPremium) {
+      return (
+        <div className="h-screen bg-midnight text-sandstone flex items-center justify-center p-6">
+          <PaymentWindow
+            amountKsh={paymentAmountKsh}
+            lockedUntil={profileViewLockUntil}
+            processing={paymentProcessing}
+            onPay={handlePayment}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="h-screen bg-midnight text-sandstone flex flex-col items-center justify-center p-6 text-center">
         <h2 className="font-serif text-4xl mb-4">The Gallery Is Quiet</h2>
@@ -154,10 +168,17 @@ export const TheGallery: FC = () => {
         <h1 className="font-serif text-xl text-sandstone drop-shadow-md">Niwangu</h1>
         <div className="flex items-center gap-2 pointer-events-auto">
           <div className="rounded-full border border-white/20 bg-sandstone/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md">
-            {isPremium ? 'Premium: 5 partner matches' : `${Math.max(0, dailySwipes - swipedCount)} swipes left`}
+            {isPremium ? 'Premium access' : `${Math.max(0, dailyProfileViews - profileViewsUsed)} profile views left`}
           </div>
           <button
-            onClick={() => setView('parlor')}
+            onClick={() => {
+              if (paymentRequired && !isPremium) {
+                setShowPaywall(true);
+                return;
+              }
+
+              setView('parlor');
+            }}
             className="bg-sandstone/10 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-sandstone/20 transition-all"
           >
             Parlor ({activeChats.length})
@@ -174,27 +195,13 @@ export const TheGallery: FC = () => {
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-50 flex items-center justify-center bg-midnight/90 p-6"
           >
-            <div className="bg-sandstone rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
-              <Lock className="w-12 h-12 text-midnight mx-auto mb-4" />
-              <h2 className="font-serif text-2xl text-midnight mb-2">Commitment Pass</h2>
-              <p className="text-midnight/70 mb-6 text-sm">
-                You have reached your 5 free swipes for today. Upgrade for 2000 KSH to receive 5 profiles matched to the partner you want.
-              </p>
-              <Button
-                onClick={handlePayment}
-                fullWidth
-                disabled={paymentProcessing}
-                className="bg-[#4CAF50] hover:bg-[#43a047] text-white"
-              >
-                {paymentProcessing ? 'Processing STK Push...' : 'Unlock via M-Pesa'}
-              </Button>
-              <button
-                onClick={() => setShowPaywall(false)}
-                className="mt-4 text-xs text-midnight/50 hover:text-midnight underline"
-              >
-                Return to Gallery
-              </button>
-            </div>
+            <PaymentWindow
+              amountKsh={paymentAmountKsh}
+              lockedUntil={profileViewLockUntil}
+              processing={paymentProcessing}
+              onPay={handlePayment}
+              onClose={() => setShowPaywall(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>

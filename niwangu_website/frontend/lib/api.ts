@@ -6,6 +6,7 @@ import {
   MatchMessageRow,
   Message,
   PricingPlan,
+  ProfileViewStatus,
   ProfilePhoto,
   ProfileUpdateInput,
   SignUpInput,
@@ -77,6 +78,14 @@ type SwipeRpcRow = {
   remaining_swipes: number;
 };
 
+type ProfileViewStatusRow = {
+  used_views: number;
+  remaining_views: number;
+  is_locked: boolean;
+  locked_until: string | null;
+  payment_amount_ksh: number;
+};
+
 const PROFILE_PHOTO_BUCKET = 'profile-photos';
 
 const mapProfile = (row: ProfileRow): CurrentUserProfile => ({
@@ -130,6 +139,14 @@ const mapChatSession = (row: MatchRow): ChatSession => ({
   isClosed: row.is_closed,
   lastMessage: row.last_message ?? '',
   lastMessageAt: row.last_message_at,
+});
+
+const mapProfileViewStatus = (row: ProfileViewStatusRow | null | undefined): ProfileViewStatus => ({
+  usedViews: row?.used_views ?? 0,
+  remainingViews: row?.remaining_views ?? 5,
+  isLocked: Boolean(row?.is_locked),
+  lockedUntil: row?.locked_until ?? null,
+  paymentAmountKsh: row?.payment_amount_ksh ?? 2000,
 });
 
 export const getSession = async (): Promise<Session | null> => {
@@ -461,8 +478,6 @@ export const choosePricingPlan = async (profileId: string, plan: PricingPlan) =>
     .from('profiles')
     .update({
       profile_ready: true,
-      is_premium: plan === 'premium',
-      daily_swipe_limit: 5,
     })
     .eq('id', profileId);
 
@@ -471,18 +486,37 @@ export const choosePricingPlan = async (profileId: string, plan: PricingPlan) =>
   }
 };
 
+export const getProfileViewStatus = async (): Promise<ProfileViewStatus> => {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc('get_profile_view_status');
+
+  if (error) {
+    throw error;
+  }
+
+  const row = Array.isArray(data)
+    ? (data[0] as ProfileViewStatusRow | undefined)
+    : (data as ProfileViewStatusRow | null);
+
+  return mapProfileViewStatus(row);
+};
+
 export const listGalleryProfiles = async () => {
   const supabase = getSupabase();
-  const profile = await getMyProfile();
   const { data, error } = await supabase.rpc('get_gallery_profiles', {
-    limit_count: profile?.isPremium ? 5 : 20,
+    limit_count: 1,
   });
 
   if (error) {
     throw error;
   }
 
-  return (data as GalleryRow[]).map(mapGalleryProfile);
+  const status = await getProfileViewStatus();
+
+  return {
+    profiles: (data as GalleryRow[]).map(mapGalleryProfile),
+    status,
+  };
 };
 
 export const handleSwipe = async (
@@ -507,33 +541,9 @@ export const handleSwipe = async (
   };
 };
 
-export const getTodaySwipeCount = async (profileId: string) => {
+export const unlockPremium = async () => {
   const supabase = getSupabase();
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
-
-  const { count, error } = await supabase
-    .from('swipes')
-    .select('id', { count: 'exact', head: true })
-    .eq('actor_profile_id', profileId)
-    .gte('created_at', start.toISOString())
-    .lte('created_at', end.toISOString());
-
-  if (error) {
-    throw error;
-  }
-
-  return count ?? 0;
-};
-
-export const unlockPremium = async (profileId: string) => {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from('profiles')
-    .update({ is_premium: true, daily_swipe_limit: 5 })
-    .eq('id', profileId);
+  const { error } = await supabase.rpc('unlock_premium_after_payment');
 
   if (error) {
     throw error;

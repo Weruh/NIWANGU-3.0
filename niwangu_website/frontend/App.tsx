@@ -46,7 +46,7 @@ export default function App() {
   }, [initializeApp, listenForAuthChanges]);
 
   if (!sessionReady) {
-    return <BootScreen message="Connecting to your sanctuary..." />;
+    return <BootScreen message="Connecting..." />;
   }
 
   if (!backendConfigured) {

@@ -4,8 +4,8 @@ import {
   choosePricingPlan as choosePricingPlanRequest,
   getMyProfile,
   getMyRitualAnswers,
+  getProfileViewStatus,
   getSession,
-  getTodaySwipeCount,
   handleSwipe,
   listGalleryProfiles,
   listMatches,
@@ -50,8 +50,11 @@ interface SanctuaryStore {
   photos: ProfilePhoto[];
   galleryProfiles: UserProfile[];
   activeChats: ChatSession[];
-  dailySwipes: number;
-  swipedCount: number;
+  dailyProfileViews: number;
+  profileViewsUsed: number;
+  paymentRequired: boolean;
+  paymentAmountKsh: number;
+  profileViewLockUntil: string | null;
   isPremium: boolean;
   userLocation: string;
   userGender: Gender | '';
@@ -99,8 +102,11 @@ const resetUnauthedState = (): Pick<
   | 'photos'
   | 'formData'
   | 'ritualStep'
-  | 'dailySwipes'
-  | 'swipedCount'
+  | 'dailyProfileViews'
+  | 'profileViewsUsed'
+  | 'paymentRequired'
+  | 'paymentAmountKsh'
+  | 'profileViewLockUntil'
   | 'isPremium'
   | 'userLocation'
   | 'userGender'
@@ -111,8 +117,11 @@ const resetUnauthedState = (): Pick<
   photos: [],
   formData: {},
   ritualStep: 0,
-  dailySwipes: 5,
-  swipedCount: 0,
+  dailyProfileViews: 5,
+  profileViewsUsed: 0,
+  paymentRequired: false,
+  paymentAmountKsh: 2000,
+  profileViewLockUntil: null,
   isPremium: false,
   userLocation: '',
   userGender: '',
@@ -125,8 +134,11 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
   photos: [],
   galleryProfiles: [],
   activeChats: [],
-  dailySwipes: 5,
-  swipedCount: 0,
+  dailyProfileViews: 5,
+  profileViewsUsed: 0,
+  paymentRequired: false,
+  paymentAmountKsh: 2000,
+  profileViewLockUntil: null,
   isPremium: false,
   userLocation: '',
   userGender: '',
@@ -192,12 +204,12 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         return;
       }
 
-      const [answers, photos, chats, swipedCount] = await Promise.all([
+      const [answers, photos, profileViewStatus] = await Promise.all([
         getMyRitualAnswers(profile.id),
         listProfilePhotos(profile.id),
-        listMatches(),
-        getTodaySwipeCount(profile.id),
+        getProfileViewStatus(),
       ]);
+      const chats = profileViewStatus.isLocked && !profile.isPremium ? [] : await listMatches();
 
       const targetView = preferredView ?? resolveAuthenticatedView(profile, photos.length);
       set({
@@ -205,8 +217,11 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         formData: answers,
         photos,
         activeChats: chats,
-        dailySwipes: profile.dailySwipeLimit,
-        swipedCount,
+        dailyProfileViews: profile.dailySwipeLimit,
+        profileViewsUsed: profileViewStatus.usedViews,
+        paymentRequired: profileViewStatus.isLocked && !profile.isPremium,
+        paymentAmountKsh: profileViewStatus.paymentAmountKsh,
+        profileViewLockUntil: profileViewStatus.lockedUntil,
         isPremium: profile.isPremium,
         userLocation: profile.location,
         userGender: profile.gender,
@@ -499,12 +514,21 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
 
     try {
       await choosePricingPlanRequest(profile.id, plan);
+      if (plan === 'premium') {
+        await unlockPremiumRequest();
+      }
+
       const refreshedProfile = await getMyProfile();
+      const profileViewStatus = await getProfileViewStatus();
 
       set({
         currentProfile: refreshedProfile,
-        dailySwipes: refreshedProfile?.dailySwipeLimit ?? 5,
-        isPremium: plan === 'premium',
+        dailyProfileViews: refreshedProfile?.dailySwipeLimit ?? 5,
+        profileViewsUsed: profileViewStatus.usedViews,
+        paymentRequired: profileViewStatus.isLocked && !refreshedProfile?.isPremium,
+        paymentAmountKsh: profileViewStatus.paymentAmountKsh,
+        profileViewLockUntil: profileViewStatus.lockedUntil,
+        isPremium: Boolean(refreshedProfile?.isPremium),
         isBusy: false,
         view: 'gallery',
       });
@@ -519,15 +543,22 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
   },
 
   loadGallery: async () => {
-    if (!get().currentProfile) {
+    if (!get().currentProfile || get().galleryLoading) {
       return;
     }
 
     set({ galleryLoading: true, errorMessage: '' });
 
     try {
-      const galleryProfiles = await listGalleryProfiles();
-      set({ galleryProfiles, galleryLoading: false });
+      const { profiles, status } = await listGalleryProfiles();
+      set({
+        galleryProfiles: profiles,
+        galleryLoading: false,
+        profileViewsUsed: status.usedViews,
+        paymentRequired: status.isLocked && !get().isPremium,
+        paymentAmountKsh: status.paymentAmountKsh,
+        profileViewLockUntil: status.lockedUntil,
+      });
     } catch (error) {
       set({
         galleryLoading: false,
@@ -549,13 +580,13 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     try {
       const result = await handleSwipe(targetProfileId, direction);
       const nextProfiles = get().galleryProfiles.filter((profileItem) => profileItem.id !== targetProfileId);
-      const nextSwipedCount = get().isPremium
-        ? get().swipedCount
-        : Math.min(get().dailySwipes, get().dailySwipes - result.remainingSwipes);
+      const nextProfileViewsUsed = get().isPremium
+        ? get().profileViewsUsed
+        : Math.min(get().dailyProfileViews, get().dailyProfileViews - result.remainingSwipes);
 
       set({
         galleryProfiles: nextProfiles,
-        swipedCount: nextSwipedCount,
+        profileViewsUsed: nextProfileViewsUsed,
       });
 
       if (result.matched) {
@@ -571,7 +602,9 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({
         errorMessage:
           error instanceof Error && error.message.includes('daily_limit_reached')
-            ? 'You have reached your daily intentional connection limit.'
+            ? 'You have reached your free profile view limit.'
+            : error instanceof Error && error.message.includes('profile_view_limit_reached')
+              ? 'You have reached your free profile view limit.'
             : error instanceof Error
               ? error.message
               : 'Unable to save that swipe.',
@@ -591,12 +624,14 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     set({ isBusy: true, errorMessage: '' });
 
     try {
-      await unlockPremiumRequest(profile.id);
+      await unlockPremiumRequest();
       const refreshedProfile = await getMyProfile();
       set({
         currentProfile: refreshedProfile,
         isPremium: true,
-        dailySwipes: refreshedProfile?.dailySwipeLimit ?? 5,
+        dailyProfileViews: refreshedProfile?.dailySwipeLimit ?? 5,
+        paymentRequired: false,
+        profileViewLockUntil: null,
         isBusy: false,
       });
 
@@ -611,6 +646,14 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
 
   loadChats: async () => {
     if (!get().currentProfile) {
+      return;
+    }
+
+    if (!get().isPremium && get().paymentRequired) {
+      set({
+        activeChats: [],
+        errorMessage: `Unlock premium for ${get().paymentAmountKsh} KSH or wait for the 24-hour profile view window to reset.`,
+      });
       return;
     }
 

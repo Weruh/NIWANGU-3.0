@@ -32,6 +32,14 @@ export interface CurrentUserProfile {
   dailySwipeLimit: number;
 }
 
+export interface ProfileViewStatus {
+  usedViews: number;
+  remainingViews: number;
+  isLocked: boolean;
+  lockedUntil: string | null;
+  paymentAmountKsh: number;
+}
+
 export interface ProfileUpdateInput {
   name: string;
   age: number;

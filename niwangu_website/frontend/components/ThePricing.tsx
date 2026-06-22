@@ -19,7 +19,7 @@ const plans: Array<{
     name: 'Free',
     price: '0 KSH',
     summary: 'Start with a small daily set of profiles.',
-    points: ['5 profile swipes per day', 'Standard matching gallery', 'No payment needed'],
+    points: ['5 profile views every 24 hours', 'Standard matching gallery', 'No payment needed'],
     cta: 'Choose Free',
   },
   {
@@ -27,7 +27,7 @@ const plans: Array<{
     name: 'Premium',
     price: '2000 KSH',
     summary: 'Unlock a focused set of partner matches.',
-    points: ['5 profiles matched to your desire', 'Premium connection experience', 'One-time simulated M-Pesa unlock'],
+    points: ['Keep swiping after the free limit', 'Parlor access while the free window is locked', 'One-time simulated M-Pesa unlock'],
     cta: 'Choose Premium',
   },
 ];

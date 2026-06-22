@@ -7,32 +7,88 @@ import { ChatSession, Message } from '../types';
 import { listMatchMessages, subscribeToMatchChanges, subscribeToMatchMessages } from '../lib/api';
 import { ProfileMenu } from './ProfileMenu';
 import { OptimizedImage } from './OptimizedImage';
+import { PaymentWindow } from './PaymentWindow';
 
 export const TheParlor: FC = () => {
-  const { activeChats, chatsLoading, currentProfile, loadChats, sendMessage, closeConnection, setView } = useSanctuaryStore(useShallow((state) => ({
+  const {
+    activeChats,
+    chatsLoading,
+    currentProfile,
+    paymentRequired,
+    paymentAmountKsh,
+    profileViewLockUntil,
+    isPremium,
+    loadChats,
+    unlockPremium,
+    sendMessage,
+    closeConnection,
+    setView,
+  } = useSanctuaryStore(useShallow((state) => ({
     activeChats: state.activeChats,
     chatsLoading: state.chatsLoading,
     currentProfile: state.currentProfile,
+    paymentRequired: state.paymentRequired,
+    paymentAmountKsh: state.paymentAmountKsh,
+    profileViewLockUntil: state.profileViewLockUntil,
+    isPremium: state.isPremium,
     loadChats: state.loadChats,
+    unlockPremium: state.unlockPremium,
     sendMessage: state.sendMessage,
     closeConnection: state.closeConnection,
     setView: state.setView,
   })));
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   useEffect(() => {
+    if (paymentRequired && !isPremium) {
+      return;
+    }
+
     void loadChats();
-  }, [loadChats]);
+  }, [isPremium, loadChats, paymentRequired]);
 
   useEffect(() => {
+    if (paymentRequired && !isPremium) {
+      return undefined;
+    }
+
     const unsubscribe = subscribeToMatchChanges(() => {
       void loadChats();
     });
 
     return unsubscribe;
-  }, [loadChats]);
+  }, [isPremium, loadChats, paymentRequired]);
 
   const selectedChat = activeChats.find((chat) => chat.id === selectedChatId) ?? null;
+
+  const handlePayment = () => {
+    setPaymentProcessing(true);
+    setTimeout(() => {
+      void unlockPremium().finally(() => {
+        setPaymentProcessing(false);
+      });
+    }, 1800);
+  };
+
+  if (paymentRequired && !isPremium) {
+    return (
+      <div className="h-screen bg-midnight flex flex-col items-center justify-center p-6">
+        <PaymentWindow
+          amountKsh={paymentAmountKsh}
+          lockedUntil={profileViewLockUntil}
+          processing={paymentProcessing}
+          onPay={handlePayment}
+        />
+        <button
+          onClick={() => setView('gallery')}
+          className="mt-5 text-xs text-sandstone/60 hover:text-sandstone underline"
+        >
+          Back to gallery
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-sandstone flex flex-col">
