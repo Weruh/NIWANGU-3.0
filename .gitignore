@@ -32,6 +32,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor / OS
+.claude/
 .vscode/*
 !.vscode/extensions.json
 .idea/
