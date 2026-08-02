@@ -1,0 +1,9 @@
+project_id = "niwangu"
+
+[functions.stk-push]
+enabled = true
+verify_jwt = false
+
+[functions.mpesa-callback]
+enabled = true
+verify_jwt = false

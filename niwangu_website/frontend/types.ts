@@ -1,6 +1,6 @@
 export type ViewState = 'home' | 'auth' | 'register' | 'ritual' | 'essence' | 'pricing' | 'gallery' | 'parlor' | 'profile';
 export type Gender = 'female' | 'male';
-export type PricingPlan = 'free' | 'premium';
+export type PricingPlan = 'free' | '7_days' | '30_days' | '90_days' | '180_days' | '365_days';
 export type SwipeDirection = 'like' | 'pass';
 
 export interface UserProfile {

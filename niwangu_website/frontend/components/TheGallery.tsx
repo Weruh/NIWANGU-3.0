@@ -8,6 +8,7 @@ import { ProfileMenu } from './ProfileMenu';
 import { OptimizedImage } from './OptimizedImage';
 import { optimizeImageUrl } from '../lib/images';
 import { PaymentWindow } from './PaymentWindow';
+import type { PricingPlan } from '../types';
 
 export const TheGallery: FC = () => {
   const {
@@ -113,14 +114,18 @@ export const TheGallery: FC = () => {
     resetCardState();
   };
 
-  const handlePayment = () => {
+  const handlePayment = (planId: PricingPlan, phoneNumber: string) => {
     setPaymentProcessing(true);
     setTimeout(() => {
-      void unlockPremium().finally(() => {
-        setPaymentProcessing(false);
-        setShowPaywall(false);
-      });
-    }, 1800);
+      void unlockPremium(planId, phoneNumber)
+        .catch(() => {
+          // The store already surfaces the failure through errorMessage.
+        })
+        .finally(() => {
+          setPaymentProcessing(false);
+          setShowPaywall(false);
+        });
+    }, 1200);
   };
 
   if (galleryLoading && !currentProfile) {
@@ -133,16 +138,8 @@ export const TheGallery: FC = () => {
 
   if (!currentProfile) {
     if (paymentRequired && !isPremium) {
-      return (
-        <div className="h-screen bg-midnight text-sandstone flex items-center justify-center p-6">
-          <PaymentWindow
-            amountKsh={paymentAmountKsh}
-            lockedUntil={profileViewLockUntil}
-            processing={paymentProcessing}
-            onPay={handlePayment}
-          />
-        </div>
-      );
+      setView('pricing');
+      return null;
     }
 
     return (
@@ -167,44 +164,9 @@ export const TheGallery: FC = () => {
       <div className="absolute top-0 left-0 right-0 z-50 p-4 flex justify-between items-center pointer-events-none">
         <h1 className="font-serif text-xl text-sandstone drop-shadow-md">Niwangu</h1>
         <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="rounded-full border border-white/20 bg-sandstone/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md">
-            {isPremium ? 'Premium access' : `${Math.max(0, dailyProfileViews - profileViewsUsed)} profile views left`}
-          </div>
-          <button
-            onClick={() => {
-              if (paymentRequired && !isPremium) {
-                setShowPaywall(true);
-                return;
-              }
-
-              setView('parlor');
-            }}
-            className="bg-sandstone/10 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-sandstone/20 transition-all"
-          >
-            Parlor ({activeChats.length})
-          </button>
-          <ProfileMenu light />
+          <ProfileMenu light onOpenPaywall={() => setView('pricing')} />
         </div>
       </div>
-
-      <AnimatePresence>
-        {showPaywall && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-midnight/90 p-6"
-          >
-            <PaymentWindow
-              amountKsh={paymentAmountKsh}
-              lockedUntil={profileViewLockUntil}
-              processing={paymentProcessing}
-              onPay={handlePayment}
-              onClose={() => setShowPaywall(false)}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {matchedName && (

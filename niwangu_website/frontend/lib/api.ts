@@ -541,12 +541,87 @@ export const handleSwipe = async (
   };
 };
 
-export const unlockPremium = async () => {
+export const requestStkPush = async (
+  phoneNumber: string,
+  planId: PricingPlan,
+  amount: number,
+  profileId: string,
+) => {
   const supabase = getSupabase();
-  const { error } = await supabase.rpc('unlock_premium_after_payment');
+  const days =
+    planId === '7_days' ? 7 :
+    planId === '30_days' ? 30 :
+    planId === '90_days' ? 90 :
+    planId === '180_days' ? 180 :
+    planId === '365_days' ? 365 : 30;
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + days);
+
+  try {
+    const { data, error } = await supabase.functions.invoke('stk-push', {
+      body: {
+        phoneNumber,
+        planId,
+        amount,
+        profileId,
+      },
+    });
+
+    if (error) {
+      // supabase-js swallows the response body on non-2xx and reports a generic
+      // "Edge Function returned a non-2xx status code". Read the body so the
+      // user sees what actually went wrong.
+      let detail = '';
+      const response = (error as { context?: Response }).context;
+      if (response && typeof response.text === 'function') {
+        const raw = await response.text().catch(() => '');
+        try {
+          const parsed = JSON.parse(raw);
+          detail = parsed?.error || parsed?.message || raw;
+        } catch {
+          detail = raw;
+        }
+      }
+      console.error('STK push function invocation failed:', error, detail);
+      throw new Error(detail || error.message || 'Unable to start the M-Pesa payment request.');
+    }
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'M-Pesa STK Push request failed.');
+    }
+
+    return data;
+  } catch (err) {
+    console.error('STK push request failed:', err);
+    throw err instanceof Error
+      ? err
+      : new Error('Unable to start M-Pesa payment. Please try again.');
+  }
+};
+
+export const unlockPremium = async (planId: PricingPlan = '30_days') => {
+  const supabase = getSupabase();
+  const user = await getCurrentUser();
+  const days =
+    planId === '7_days' ? 7 :
+    planId === '30_days' ? 30 :
+    planId === '90_days' ? 90 :
+    planId === '180_days' ? 180 :
+    planId === '365_days' ? 365 : 30;
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + days);
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      is_premium: true,
+      subscription_plan: planId,
+      premium_expires_at: expiresAt.toISOString(),
+    })
+    .eq('auth_user_id', user.id);
 
   if (error) {
-    throw error;
+    await supabase.rpc('unlock_premium_after_payment');
   }
 };
 

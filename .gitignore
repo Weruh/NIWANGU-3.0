@@ -1,1 +1,48 @@
 /package-lock.json
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Supabase CLI state (linked project ref, cached versions, pooler url)
+.temp/
+.branches/
+supabase/.env
+
+# Deno
+.deno/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Deploy
+.vercel
+.netlify

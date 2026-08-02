@@ -17,6 +17,7 @@ import {
   signOut as signOutRequest,
   signUpWithEmail,
   unlockPremium as unlockPremiumRequest,
+  requestStkPush,
   updateMyProfile,
   uploadProfilePhoto,
   deleteProfilePhoto,
@@ -86,7 +87,7 @@ interface SanctuaryStore {
   choosePricingPlan: (plan: PricingPlan) => Promise<void>;
   loadGallery: () => Promise<void>;
   swipeProfile: (targetProfileId: string, direction: SwipeDirection) => Promise<{ matched: boolean }>;
-  unlockPremium: () => Promise<void>;
+  unlockPremium: (planId?: PricingPlan, phoneNumber?: string) => Promise<void>;
   loadChats: () => Promise<void>;
   sendMessage: (chatId: string, text: string) => Promise<void>;
   closeConnection: (chatId: string, reason: string) => Promise<void>;
@@ -613,7 +614,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     }
   },
 
-  unlockPremium: async () => {
+  unlockPremium: async (planId = '30_days', phoneNumber) => {
     const profile = get().currentProfile;
 
     if (!profile) {
@@ -624,7 +625,25 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     set({ isBusy: true, errorMessage: '' });
 
     try {
-      await unlockPremiumRequest();
+      if (phoneNumber) {
+        const amountMap: Record<string, number> = {
+          '7_days': 99,
+          '30_days': 199,
+          '90_days': 499,
+          '180_days': 999,
+          '365_days': 1799,
+        };
+        const amount = amountMap[planId] || 199;
+        await requestStkPush(phoneNumber, planId, amount, profile.id);
+        set({
+          infoMessage: 'STK push sent. Complete the payment in M-Pesa to unlock premium access.',
+          isBusy: false,
+        });
+        return;
+      }
+
+      await unlockPremiumRequest(planId);
+
       const refreshedProfile = await getMyProfile();
       set({
         currentProfile: refreshedProfile,
@@ -641,6 +660,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         isBusy: false,
         errorMessage: error instanceof Error ? error.message : 'Unable to unlock premium.',
       });
+      throw error;
     }
   },
 

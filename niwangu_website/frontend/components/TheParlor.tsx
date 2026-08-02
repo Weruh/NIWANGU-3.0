@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
 import { ArrowLeft, Send, Sprout, Flower, XCircle } from 'lucide-react';
-import { ChatSession, Message } from '../types';
+import { ChatSession, Message, PricingPlan } from '../types';
 import { listMatchMessages, subscribeToMatchChanges, subscribeToMatchMessages } from '../lib/api';
 import { ProfileMenu } from './ProfileMenu';
 import { OptimizedImage } from './OptimizedImage';
@@ -62,32 +62,22 @@ export const TheParlor: FC = () => {
 
   const selectedChat = activeChats.find((chat) => chat.id === selectedChatId) ?? null;
 
-  const handlePayment = () => {
+  const handlePayment = (planId: PricingPlan, phoneNumber: string) => {
     setPaymentProcessing(true);
     setTimeout(() => {
-      void unlockPremium().finally(() => {
-        setPaymentProcessing(false);
-      });
-    }, 1800);
+      void unlockPremium(planId, phoneNumber)
+        .catch(() => {
+          // The store already surfaces the failure through errorMessage.
+        })
+        .finally(() => {
+          setPaymentProcessing(false);
+        });
+    }, 1200);
   };
 
   if (paymentRequired && !isPremium) {
-    return (
-      <div className="h-screen bg-midnight flex flex-col items-center justify-center p-6">
-        <PaymentWindow
-          amountKsh={paymentAmountKsh}
-          lockedUntil={profileViewLockUntil}
-          processing={paymentProcessing}
-          onPay={handlePayment}
-        />
-        <button
-          onClick={() => setView('gallery')}
-          className="mt-5 text-xs text-sandstone/60 hover:text-sandstone underline"
-        >
-          Back to gallery
-        </button>
-      </div>
-    );
+    setView('pricing');
+    return null;
   }
 
   return (
@@ -142,7 +132,7 @@ const ChatList: FC<{
           <button onClick={onBack} className="p-2 -ml-2 hover:bg-black/5 rounded-full">
             <ArrowLeft className="text-midnight" />
           </button>
-          <h2 className="font-serif text-3xl text-midnight">The Parlor</h2>
+          <h2 className="font-serif text-3xl text-midnight">Chats</h2>
         </div>
         <ProfileMenu />
       </div>
@@ -179,7 +169,7 @@ const ChatList: FC<{
 
           {chats.length === 0 && !loading && (
             <div className="text-center text-midnight/40 mt-20">
-              <p>The parlor is quiet.</p>
+              <p>Chat is quiet.</p>
               <p className="text-sm">Return to the gallery to find connection.</p>
             </div>
           )}
