@@ -436,13 +436,16 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
       <div className="mx-auto max-w-4xl">
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">{page.eyebrow}</p>
         <h1 className="mt-4 font-serif text-5xl leading-tight text-midnight sm:text-6xl">{page.title}</h1>
-        <p className="mt-6 max-w-3xl text-lg leading-8 text-midnight/80">{page.intro}</p>
+        <p className="mt-6 max-w-[62ch] text-lg leading-8 text-midnight/80">{page.intro}</p>
 
-        <div className="mt-12 grid gap-5">
+        {/* No cards. These are documents, so the headings carry the structure.
+            Body copy is capped in ch rather than px to hold a readable line
+            length whatever the viewport does. */}
+        <div className="mt-12 space-y-10">
           {page.sections.map((section) => (
-            <article key={section.title} className="rounded-lg border border-midnight/10 bg-white p-6 shadow-sm">
+            <article key={section.title}>
               <h2 className="font-serif text-2xl text-midnight">{section.title}</h2>
-              <p className="mt-3 leading-7 text-midnight/80">{section.body}</p>
+              <p className="mt-3 max-w-[68ch] leading-8 text-midnight/80">{section.body}</p>
             </article>
           ))}
         </div>
