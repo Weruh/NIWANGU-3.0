@@ -85,7 +85,7 @@ export const ThePricing: FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
     >
-      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-6xl flex-col justify-center py-6">
+      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-7xl flex-col justify-center py-6">
         {/* Back Button */}
         <div className="flex items-center justify-between w-full mb-6">
           <button
@@ -97,11 +97,11 @@ export const ThePricing: FC = () => {
         </div>
 
         {/* Header Section */}
-        <div className="text-center max-w-xl mx-auto mb-8">
-          <h1 className="font-serif text-5xl font-bold tracking-tight mb-3">
+        <div className="text-center max-w-xl mx-auto mb-10">
+          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-3">
             Simple Pricing
           </h1>
-          <p className="text-midnight/80 text-base mb-6">
+          <p className="text-midnight/70 text-sm sm:text-base mb-7">
             Choose the best plan for your needs
           </p>
 
@@ -145,106 +145,107 @@ export const ThePricing: FC = () => {
           </p>
         )}
 
-        {/* Pricing Cards Grid (Matching screenshot layout) */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-14 items-stretch">
+        {/* Pricing cards.
+            Every card runs the same vertical rhythm — badge slot, title, price,
+            description, divider, features, CTA — so the rows line up across the
+            grid regardless of how many features a plan lists. */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-14 items-stretch">
           {plans.map((card) => {
             const isPopular = card.isPopular;
             const isDark = card.isDark;
+            const badgeText = isPopular ? "Most Popular" : card.badge;
 
             return (
               <div
                 key={card.id}
-                className={`rounded-2xl p-6 transition-all flex flex-col justify-between relative shadow-sm hover:shadow-lg ${
+                className={`flex flex-col rounded-2xl p-6 transition-shadow ${
                   isPopular
-                    ? "border-2 border-midnight bg-white ring-1 ring-midnight/10 shadow-xl scale-[1.02] z-10"
+                    ? "bg-white border-2 border-midnight shadow-lg hover:shadow-xl"
                     : isDark
-                      ? "bg-midnight text-sandstone border border-midnight shadow-xl"
-                      : "bg-white/80 border border-midnight/15 text-midnight"
+                      ? "bg-midnight text-sandstone border border-midnight shadow-md hover:shadow-lg"
+                      : "bg-white/80 border border-midnight/15 text-midnight shadow-sm hover:shadow-md"
                 }`}
               >
-                {/* Popular Pill Badge */}
-                {isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white border border-midnight/20 px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1 text-[11px] font-semibold text-midnight">
-                    <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>Most Popular</span>
-                  </div>
-                )}
-
-                <div>
-                  {/* Card Title */}
-                  <div className="flex items-center justify-between mb-4">
-                    <h3
-                      className={`font-serif text-lg font-bold ${isDark ? "text-sandstone" : "text-midnight"}`}
-                    >
-                      {card.label}
-                    </h3>
-                    {!isPopular && card.badge && (
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          isDark
+                {/* Fixed-height slot keeps titles aligned whether or not a card
+                    carries a badge. Previously the popular pill was absolutely
+                    positioned and collided with the title beneath it. */}
+                <div className="h-6 mb-3 flex items-center">
+                  {badgeText && (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${
+                        isPopular
+                          ? "bg-midnight text-sandstone"
+                          : isDark
                             ? "bg-sandstone/15 text-sandstone"
                             : "bg-midnight/10 text-midnight"
-                        }`}
-                      >
-                        {card.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Price */}
-                  <div className="mb-4">
-                    <span className="font-serif text-4xl font-extrabold tracking-tight">
-                      KSh {card.priceKsh.toLocaleString()}
-                    </span>
-                    <span
-                      className={`text-xs ml-1 font-medium ${isDark ? "text-sandstone/70" : "text-midnight/80"}`}
+                      }`}
                     >
-                      {card.period}
-                    </span>
-                  </div>
-
-                  {/* Description */}
-                  <p
-                    className={`text-xs mb-6 ${isDark ? "text-sandstone/70" : "text-midnight/80"}`}
-                  >
-                    {card.description}
-                  </p>
-
-                  {/* Feature Checklist */}
-                  <div className="space-y-3 mb-8">
-                    {card.features.map((feat) => (
-                      <div
-                        key={feat}
-                        className="flex items-start gap-2.5 text-xs"
-                      >
-                        <CheckCircle2
-                          className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? "text-sandstone/80" : "text-midnight/80"}`}
+                      {isPopular && (
+                        <Flame
+                          className="w-3 h-3 text-amber-400 fill-amber-400"
+                          aria-hidden="true"
                         />
-                        <span
-                          className={
-                            isDark ? "text-sandstone/85" : "text-midnight/80"
-                          }
-                        >
-                          {feat}
-                        </span>
-                      </div>
-                    ))}
+                      )}
+                      {badgeText}
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="text-sm font-semibold tracking-tight mb-4">
+                  {card.label}
+                </h3>
+
+                {/* Price and period are stacked. Inline, "KSh 1,799 / year"
+                    broke mid-unit at this column width. */}
+                <div className="mb-4">
+                  <div className="text-[2rem] font-bold leading-none tracking-tight tabular-nums">
+                    KSh {card.priceKsh.toLocaleString()}
+                  </div>
+                  <div
+                    className={`mt-2 text-xs font-medium ${isDark ? "text-sandstone/60" : "text-midnight/60"}`}
+                  >
+                    {card.period}
                   </div>
                 </div>
 
-                {/* Bottom CTA Button matching screenshot style */}
+                <p
+                  className={`text-xs leading-relaxed ${isDark ? "text-sandstone/70" : "text-midnight/70"}`}
+                >
+                  {card.description}
+                </p>
+
+                <div
+                  className={`my-5 border-t ${isDark ? "border-sandstone/15" : "border-midnight/10"}`}
+                />
+
+                {/* flex-1 pushes every CTA to the same baseline. */}
+                <ul className="flex-1 space-y-2.5 mb-6">
+                  {card.features.map((feat) => (
+                    <li key={feat} className="flex items-start gap-2 text-xs leading-relaxed">
+                      <CheckCircle2
+                        className={`w-3.5 h-3.5 shrink-0 mt-[0.15rem] ${isDark ? "text-sandstone/70" : "text-midnight/50"}`}
+                        aria-hidden="true"
+                      />
+                      <span className={isDark ? "text-sandstone/85" : "text-midnight/75"}>
+                        {feat}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
                 <button
                   onClick={() => setSelectedCheckoutPlan(card)}
-                  className={`w-full py-3 px-4 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 group ${
+                  className={`group w-full rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors flex items-center justify-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
                     isDark
-                      ? "bg-sandstone text-midnight hover:bg-white"
-                      : isPopular
-                        ? "bg-midnight text-sandstone hover:bg-midnight/90 shadow"
-                        : "bg-midnight text-sandstone hover:bg-midnight/85"
+                      ? "bg-sandstone text-midnight hover:bg-white focus-visible:outline-sandstone"
+                      : "bg-midnight text-sandstone hover:bg-midnight/90 focus-visible:outline-midnight"
                   }`}
                 >
                   <span>Get started</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight
+                    className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                  />
                 </button>
               </div>
             );
@@ -265,7 +266,7 @@ export const ThePricing: FC = () => {
         <div className="bg-midnight text-sandstone rounded-2xl p-6 sm:p-8 shadow-xl max-w-4xl mx-auto w-full">
           <div className="flex items-center gap-2 mb-4 text-emerald-400">
             <Zap className="w-5 h-5" />
-            <h3 className="font-serif text-2xl font-semibold text-sandstone">
+            <h3 className="text-xl font-semibold tracking-tight text-sandstone">
               Why KSh 199 is a good entry point
             </h3>
           </div>
@@ -345,10 +346,10 @@ export const ThePricing: FC = () => {
                   <span className="text-[10px] font-bold uppercase tracking-wider bg-midnight/10 px-2 py-0.5 rounded-full text-midnight">
                     M-Pesa STK Push Unlock
                   </span>
-                  <h3 id="mpesa-checkout-title" className="font-serif text-2xl font-bold mt-2">
+                  <h3 id="mpesa-checkout-title" className="text-xl font-semibold tracking-tight mt-2">
                     {selectedCheckoutPlan.label}
                   </h3>
-                  <p className="text-sm font-serif font-bold text-emerald-800">
+                  <p className="mt-1 text-sm font-semibold text-emerald-800">
                     KSh {selectedCheckoutPlan.priceKsh.toLocaleString()}{" "}
                     {selectedCheckoutPlan.period}
                   </p>
