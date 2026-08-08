@@ -327,7 +327,7 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
       <div className="mx-auto max-w-4xl">
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">{page.eyebrow}</p>
         <h1 className="mt-4 font-serif text-5xl leading-tight text-midnight sm:text-6xl">{page.title}</h1>
-        <p className="mt-6 max-w-3xl text-lg leading-8 text-midnight/72">{page.intro}</p>
+        <p className="mt-6 max-w-3xl text-lg leading-8 text-midnight/80">{page.intro}</p>
 
         <div className="mt-12 grid gap-5">
           {page.sections.map((section) => (
@@ -391,7 +391,7 @@ export const SanctuaryGate: FC = () => {
             <h1 className="max-w-[520px] font-serif text-5xl leading-[0.98] text-midnight sm:text-6xl xl:text-[5.35rem]">
               Find your intentional love story.
             </h1>
-            <p className="mt-7 max-w-[500px] text-lg leading-8 text-midnight/72 sm:text-xl sm:leading-9">
+            <p className="mt-7 max-w-[500px] text-lg leading-8 text-midnight/80 sm:text-xl sm:leading-9">
               Meet people who value depth, emotional clarity, and a gentler path toward real connection.
             </p>
 
@@ -416,9 +416,9 @@ export const SanctuaryGate: FC = () => {
               </Button>
             </div>
 
-            <p className="mt-6 text-sm font-medium text-midnight/62">A space for slow, meaningful connection.</p>
+            <p className="mt-6 text-sm font-medium text-midnight/70">A space for slow, meaningful connection.</p>
 
-            <div className="mt-12 grid grid-cols-3 gap-4 border-y border-midnight/10 py-6 text-sm text-midnight/68">
+            <div className="mt-12 grid grid-cols-3 gap-4 border-y border-midnight/10 py-6 text-sm text-midnight/80">
               <div>
                 <strong className="block font-serif text-3xl leading-none text-midnight">3</strong>
                 <span className="mt-2 block">thoughtful steps</span>
@@ -434,7 +434,7 @@ export const SanctuaryGate: FC = () => {
             </div>
           </div>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-sandstone/0 via-sandstone/72 to-white sm:h-32" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-sandstone/0 via-sandstone/70 to-white sm:h-32" />
       </section>
 
       <section className="relative bg-white px-6 pb-28 pt-14 sm:px-10 sm:pt-16 lg:px-14" aria-labelledby="how-it-works">
@@ -454,13 +454,13 @@ export const SanctuaryGate: FC = () => {
                     <Icon className="h-6 w-6" aria-hidden="true" />
                   </div>
                   <h3 className="font-serif text-2xl text-midnight">{step.title}</h3>
-                  <p className="mt-3 leading-7 text-midnight/68">{step.description}</p>
+                  <p className="mt-3 leading-7 text-midnight/80">{step.description}</p>
                 </article>
               );
             })}
           </div>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-white/0 via-white/72 to-[#4a3b42] sm:h-32" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-white/0 via-white/70 to-[#4a3b42] sm:h-32" />
       </section>
 
       <section className="relative bg-[#4a3b42] px-6 pb-28 pt-20 text-white sm:px-10 lg:px-14" aria-labelledby="love-stories">
@@ -521,7 +521,7 @@ export const SanctuaryGate: FC = () => {
             ))}
           </div>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-[#4a3b42]/0 via-[#4a3b42]/72 to-[#f7c4d0] sm:h-32" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-[#4a3b42]/0 via-[#4a3b42]/70 to-[#f7c4d0] sm:h-32" />
       </section>
 
       <section className="relative bg-[#f7c4d0] px-6 pb-28 pt-20 sm:px-10 lg:px-14" aria-labelledby="final-cta">
@@ -531,7 +531,7 @@ export const SanctuaryGate: FC = () => {
             <h2 id="final-cta" className="font-serif text-4xl text-midnight sm:text-5xl">
               Your intentional journey starts here.
             </h2>
-            <p className="mt-4 text-lg leading-8 text-midnight/72">
+            <p className="mt-4 text-lg leading-8 text-midnight/80">
               Choose a dating experience that respects your time, your boundaries, and your desire for something real.
             </p>
           </div>
@@ -545,7 +545,7 @@ export const SanctuaryGate: FC = () => {
             Join Niwangu
           </Button>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-[#f7c4d0]/0 via-[#f7c4d0]/72 to-white sm:h-32" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-[#f7c4d0]/0 via-[#f7c4d0]/70 to-white sm:h-32" />
       </section>
 
       <footer className="bg-white px-6 pb-10 pt-12 text-midnight sm:px-10 lg:px-14">
@@ -555,7 +555,7 @@ export const SanctuaryGate: FC = () => {
               <NiwanguLogo className="h-10 w-10" />
               <span className="font-serif text-2xl text-midnight">Niwangu</span>
             </div>
-            <p className="mt-3 text-sm text-midnight/62">&copy; {currentYear} Niwangu. All rights reserved.</p>
+            <p className="mt-3 text-sm text-midnight/70">&copy; {currentYear} Niwangu. All rights reserved.</p>
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-3 text-sm" aria-label="Footer navigation">
             {footerLinks.map((link) => (
