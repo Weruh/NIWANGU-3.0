@@ -143,47 +143,91 @@ const footerLinks = [
   { label: 'Community Guidelines', href: '/community-guidelines' },
 ];
 
+// Shown on the policy pages. A fixed revision date, not the current year:
+// these documents should say when they were last actually revised.
+const POLICY_LAST_UPDATED = '8 August 2026';
+
 const footerPages = {
   '/contact-us': {
     eyebrow: 'Support',
     title: 'Contact Us',
     intro:
-      'Questions, partnership requests, account concerns, and safety reports can be sent to the Niwangu team through the channels below.',
+      'Niwangu is run by a small team in Kenya. Use the address that matches what you need and we will route it to the right person.',
     sections: [
       {
-        title: 'General Support',
-        body: 'Email support@niwangu.com for account questions, onboarding help, billing questions, or feedback about your experience.',
+        title: 'Accounts and Passes',
+        body: 'Email support@niwangu.com for help with signing in, editing your profile, questions about a pass, or anything that looks wrong in the app. If your question is about a payment, include the M-Pesa confirmation code and the phone number you paid from — that is what lets us find the transaction.',
       },
       {
-        title: 'Safety and Trust',
-        body: 'For urgent safety concerns, suspicious behavior, or community guideline reports, email safety@niwangu.com and include screenshots or relevant details when available.',
+        title: 'Safety and Conduct',
+        body: 'Email safety@niwangu.com to report harassment, threats, a fake or stolen profile, a request for money, or anyone who ignores a stated boundary. Include the member’s name as it appears in the app and a screenshot if you have one. Reports about someone’s immediate safety are read first.',
       },
       {
-        title: 'Business Inquiries',
-        body: 'For media, partnerships, or brand inquiries, contact hello@niwangu.com. We aim to respond to most messages within 2 business days.',
+        title: 'Privacy and Your Data',
+        body: 'Email privacy@niwangu.com to ask what information we hold about you, to correct it, or to request deletion of your account and its data. See the Privacy Policy for what we collect and how long it is kept.',
+      },
+      {
+        title: 'Business and Media',
+        body: 'For partnerships, press, or anything commercial, email hello@niwangu.com.',
+      },
+      {
+        title: 'Emergencies',
+        body: 'Niwangu is not an emergency service and is not monitored around the clock. If you are in immediate danger, contact the Kenya Police on 999 or 112 rather than waiting for a reply from us.',
       },
     ],
   },
   '/faqs': {
     eyebrow: 'Help Center',
     title: 'Frequently Asked Questions',
-    intro: 'Quick answers about how Niwangu works and what members can expect from an intentional dating experience.',
+    intro: 'How Niwangu works, what it costs, and why it behaves differently from the apps you are used to.',
     sections: [
       {
         title: 'What is Niwangu?',
-        body: 'Niwangu is a dating experience for people who want slower, more meaningful connection built around values, clarity, and intention.',
+        body: 'A dating app for people looking for something serious. Instead of an endless feed, you answer a set of questions about what you want, and Niwangu uses those answers to decide who you meet and to tell you why.',
       },
       {
-        title: 'How do matches work?',
-        body: 'Members create a values-led profile, answer thoughtful prompts, and discover compatible people through a calmer daily experience.',
+        title: 'What is the Alignment Ritual?',
+        body: 'Twelve questions you answer when you join, covering what you are building, your timeline, where you are in life, children, your core value, your non-negotiable, how you handle conflict, your social energy, how much you value introspection, and one open question about what you will no longer entertain. Your answers shape who you are shown.',
       },
       {
-        title: 'Can I control my pace?',
-        body: 'Yes. Niwangu is designed around boundaries, daily intention, and conversations that do not need to feel rushed.',
+        title: 'How does matching work?',
+        body: 'Two things must line up before anyone is shown to you: you are each looking for the other’s gender, and your answers about wanting children are not irreconcilable. Everyone else is ranked, not filtered — people whose Ritual answers align with yours come up first, and anyone who has already liked you is moved to the front.',
       },
       {
-        title: 'How do I report a concern?',
-        body: 'Use the reporting tools in the app when available, or contact safety@niwangu.com with the details of the concern.',
+        title: 'Why do I only see one profile at a time?',
+        body: 'Because the point is to consider someone rather than scroll past them. Coming back to the app re-shows the profile you have not swiped on yet, so refreshing never costs you a view.',
+      },
+      {
+        title: 'What does “Why you align” mean on a profile?',
+        body: 'The specific things you and that person answered the same way — wanting children, a shared timeline, the same core value. Niwangu only claims something when you genuinely share it, so a profile with fewer reasons listed simply overlaps with you on fewer answers.',
+      },
+      {
+        title: 'How much can I use for free?',
+        body: 'Five profile views every 24 hours, plus full access to conversations with anyone you have already matched with. The limit resets on a rolling 24-hour basis, not at midnight.',
+      },
+      {
+        title: 'What do passes cost and how do I pay?',
+        body: 'Passes run from KSh 99 for 7 days up to KSh 1,799 for a year, and remove the daily view limit for that period. Payment is by M-Pesa: you enter your Safaricom number, approve the STK prompt on your phone, and access opens as soon as the payment is confirmed.',
+      },
+      {
+        title: 'Does a pass renew automatically?',
+        body: 'No. Nothing is ever charged again without you starting a new payment yourself. When a pass ends you simply return to the free daily limit.',
+      },
+      {
+        title: 'What if I buy a pass before my current one ends?',
+        body: 'The new days are added to the time you have left rather than replacing it, so you never lose days by renewing early.',
+      },
+      {
+        title: 'Why do I have to read someone’s boundary first?',
+        body: 'If your match stated a boundary in the Ritual, it replaces the message box until you acknowledge it. It takes one tap, it only happens once per conversation, and it means the first thing you say is written knowing where that person stands.',
+      },
+      {
+        title: 'Can I change my Ritual answers later?',
+        body: 'Yes. Update them from your profile and matching adjusts straight away, so who you are shown reflects your current answers rather than the ones you gave when you joined.',
+      },
+      {
+        title: 'How do I end a conversation or report someone?',
+        body: 'Any conversation can be closed with a reason, which ends it respectfully for both people. To report behaviour rather than simply leave, email safety@niwangu.com with the member’s name and a screenshot.',
       },
     ],
   },
@@ -191,23 +235,43 @@ const footerPages = {
     eyebrow: 'Legal',
     title: 'Privacy Policy',
     intro:
-      'This page explains the types of information Niwangu may collect and how that information is used to operate and improve the service.',
+      'What Niwangu collects, why, who it is shared with, and what you can ask us to do with it. Written to be read rather than skimmed past.',
     sections: [
       {
-        title: 'Information We Collect',
-        body: 'We may collect account details, profile information, photos, preferences, messages, usage activity, device data, and support communications you provide.',
+        title: 'What You Give Us',
+        body: 'Your email address and password when you register; your name, age, gender, the gender you are looking for, and the location you type; up to three photos; your twelve Ritual answers; and the messages you send to matches. Passwords are hashed by our authentication provider and are never visible to us.',
       },
       {
-        title: 'How We Use Information',
-        body: 'We use information to create accounts, recommend compatible profiles, operate messaging, improve safety, provide support, prevent misuse, and improve Niwangu.',
+        title: 'What We Record As You Use Niwangu',
+        body: 'Which profiles you have been shown and when, your likes and passes, matches formed, when you last read a conversation, and standard technical logs. Profile views are recorded because they are how the free daily limit is counted.',
       },
       {
-        title: 'Sharing and Safety',
-        body: 'We do not sell personal profile data. Information may be shared with service providers, legal authorities when required, or safety partners when needed to protect members.',
+        title: 'Location',
+        body: 'Niwangu does not use GPS and does not track your location. The place shown on your profile is only the text you typed, and it is never more precise than what you chose to write.',
       },
       {
-        title: 'Your Choices',
-        body: 'You can update profile details, manage account settings, request account deletion, or contact privacy@niwangu.com for privacy-related requests.',
+        title: 'Payments',
+        body: 'Payments are processed by Paystack over M-Pesa. We store the phone number used, the amount, the plan, and the reference and receipt numbers so a payment can be reconciled and support can help you. We never see or store your M-Pesa PIN or any card details.',
+      },
+      {
+        title: 'What Other Members Can See',
+        body: 'Your name, age, gender, location, photos, your stated boundary, and the specific Ritual answers you have in common with the person viewing you. Your email address, phone number, payment records, and full set of Ritual answers are never shown to other members.',
+      },
+      {
+        title: 'Who Else Processes Your Data',
+        body: 'Supabase provides the database, authentication, photo storage, and hosting that Niwangu runs on. Paystack processes payments. We do not sell your personal data, and we do not share it for advertising.',
+      },
+      {
+        title: 'How Long We Keep It',
+        body: 'Your profile and content are kept while your account exists. When you delete your account, your profile, photos, Ritual answers, likes, and matches are removed. Records of completed payments are retained for the period required for financial and tax purposes.',
+      },
+      {
+        title: 'Your Rights',
+        body: 'Under the Kenya Data Protection Act, 2019 you may ask for a copy of your data, correct it, ask for it to be deleted, or object to how it is used. Email privacy@niwangu.com and we will respond within the statutory period. You may also complain to the Office of the Data Protection Commissioner.',
+      },
+      {
+        title: 'Changes to This Policy',
+        body: 'If we change how information is collected or used, this page is updated and the revision date below changes with it.',
       },
     ],
   },
@@ -215,46 +279,91 @@ const footerPages = {
     eyebrow: 'Legal',
     title: 'Terms of Service',
     intro:
-      'These terms describe the basic rules for using Niwangu. By using the service, members agree to act honestly, lawfully, and respectfully.',
+      'The agreement between you and Niwangu. By creating an account you accept these terms.',
     sections: [
       {
-        title: 'Eligibility',
-        body: 'You must be legally old enough to use dating services in your location and must provide accurate account information.',
+        title: 'Who Can Join',
+        body: 'You must be at least 18 years old to use Niwangu. Accounts found to belong to anyone under 18 are removed immediately and permanently.',
       },
       {
-        title: 'Member Responsibilities',
-        body: 'Members are responsible for their profile content, conversations, conduct, and decisions to meet or communicate outside Niwangu.',
+        title: 'Your Account',
+        body: 'Give accurate information and keep your sign-in details to yourself. You are responsible for activity on your account. One person, one account — do not create an account on someone else’s behalf or impersonate anyone.',
       },
       {
-        title: 'Prohibited Behavior',
-        body: 'Harassment, hate, scams, impersonation, explicit threats, spam, non-consensual content, and illegal activity are not permitted.',
+        title: 'Free Access and Passes',
+        body: 'Without a pass you may view five profiles every 24 hours and continue any conversation you already have. A pass removes that limit for a set number of days at the price shown when you buy it.',
       },
       {
-        title: 'Service Changes',
-        body: 'Niwangu may update, limit, suspend, or discontinue features as needed to improve the product, protect members, or comply with legal requirements.',
+        title: 'Payment',
+        body: 'Passes are paid in Kenyan Shillings by M-Pesa through Paystack. A pass starts once payment is confirmed, not when the prompt is sent. Passes do not renew automatically and you will never be charged again without starting a new payment. Buying while a pass is still running adds the new days to your remaining time.',
+      },
+      {
+        title: 'If Something Goes Wrong With a Payment',
+        body: 'If money leaves your account and access does not open, email support@niwangu.com with the M-Pesa confirmation code and the number you paid from, and we will reconcile it. Contact us before attempting the payment a second time.',
+      },
+      {
+        title: 'Your Content',
+        body: 'Your photos, answers, and messages remain yours. You give Niwangu permission to store them and to display them to other members as the app is designed to do, for as long as your account exists.',
+      },
+      {
+        title: 'How You Must Behave',
+        body: 'The Community Guidelines form part of these terms. In short: be honest, respect stated boundaries and the word no, and do not harass, threaten, defraud, or solicit money from other members.',
+      },
+      {
+        title: 'Suspension and Removal',
+        body: 'We may limit, suspend, or remove an account that breaks these terms or the guidelines, or that puts other members at risk. Where a serious risk to someone is involved we will act first and explain afterwards.',
+      },
+      {
+        title: 'What Niwangu Does Not Promise',
+        body: 'We match people, we do not vet them. Niwangu does not run background or criminal record checks, and cannot guarantee that anyone is who they claim to be, that you will match with anyone, or how any meeting will go. Meet in public, tell someone where you are going, and never send money to someone you have met here.',
+      },
+      {
+        title: 'Changes',
+        body: 'Features and prices may change as Niwangu develops. Material changes to these terms will be reflected on this page with a new revision date. Continuing to use Niwangu after a change means you accept it.',
+      },
+      {
+        title: 'Governing Law',
+        body: 'These terms are governed by the laws of Kenya, and the courts of Kenya have jurisdiction over any dispute arising from them.',
       },
     ],
   },
   '/community-guidelines': {
     eyebrow: 'Safety',
     title: 'Community Guidelines',
-    intro: 'Niwangu is built for intentional connection. These guidelines help keep the community respectful, safe, and honest.',
+    intro:
+      'Niwangu only works if people arrive in good faith. These are the rules that make that possible, and what happens when they are broken.',
     sections: [
       {
-        title: 'Lead With Respect',
-        body: 'Treat every member as a full person. No harassment, pressure, insults, hate speech, or degrading comments.',
+        title: 'Respect the Boundary',
+        body: 'Every member states something they are no longer willing to entertain, and you have to read it before you can send a first message. Acknowledging it is not a formality. Testing, arguing with, or ignoring someone’s stated boundary is treated as harassment.',
       },
       {
         title: 'Be Honest',
-        body: 'Use current photos, accurate profile information, and clear intentions. Do not impersonate anyone or misrepresent your relationship status.',
+        body: 'Use recent photos that are actually of you, give your real age, and answer the Ritual truthfully. The whole app is built on those answers, so misrepresenting them wastes other people’s time as much as your own. Never present yourself as someone you are not.',
       },
       {
-        title: 'Honor Consent and Boundaries',
-        body: 'Respect someone’s pace, privacy, and decisions. If someone says no or stops responding, do not pressure them.',
+        title: 'Take No For an Answer',
+        body: 'Someone may end a conversation, decline to meet, or stop replying at any point and does not owe you a reason. Pressure, guilt, repeated requests after a refusal, and abuse after rejection are all grounds for removal.',
       },
       {
-        title: 'Protect the Community',
-        body: 'Report scams, threats, suspicious behavior, or guideline violations. Niwangu may remove content or accounts that create harm.',
+        title: 'Keep It Free of Harm',
+        body: 'No harassment, hate speech, threats, slurs, or content that degrades anyone. No sexual content sent to someone who has not asked for it. No content involving minors, ever — that is reported to the authorities as well as removed.',
+      },
+      {
+        title: 'Never Send Money',
+        body: 'No genuine member will ask you for money, M-Pesa transfers, airtime, or help with a business or emergency. Requests like these are the most common scam on Kenyan dating platforms. Do not send anything, and report it to safety@niwangu.com straight away.',
+      },
+      {
+        title: 'Protect Your Own Details',
+        body: 'Keep conversations in the Parlor until you trust someone. Be careful about sharing your ID, workplace, home area, or financial details early. If someone pushes hard to move to another app immediately, treat it as a warning sign.',
+      },
+      {
+        title: 'Report What You See',
+        body: 'You can close any conversation with a reason, which ends it without confrontation. For behaviour that others should be protected from, email safety@niwangu.com with the member’s name and a screenshot. Reporting is confidential and the person is not told who reported them.',
+      },
+      {
+        title: 'What Happens When These Are Broken',
+        body: 'Depending on severity we may issue a warning, remove content, limit an account, or remove it permanently. Impersonation, scams, threats, and anything involving minors result in immediate removal without warning.',
       },
     ],
   },
@@ -338,8 +447,9 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
           ))}
         </div>
 
-        <p className="mt-10 text-sm text-midnight/80">
-          Last updated {currentYear}. For formal legal or privacy requests, contact the Niwangu team directly.
+        <p className="mt-10 border-t border-midnight/10 pt-6 text-sm text-midnight/70">
+          Last updated {POLICY_LAST_UPDATED}. &copy; {currentYear} Niwangu. For formal legal or privacy
+          requests, email privacy@niwangu.com.
         </p>
       </div>
     </section>
