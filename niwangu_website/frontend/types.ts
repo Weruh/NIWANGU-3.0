@@ -28,6 +28,8 @@ export interface UserProfile {
   boundary: string;
   ritualAnswers: Record<number, string>;
   distance: string;
+  /** Why the server surfaced this person, derived from the Ritual answers you both gave. */
+  alignmentReasons: string[];
 }
 
 export interface CurrentUserProfile {
@@ -89,6 +91,10 @@ export interface ChatSession {
   lastMessage?: string;
   lastMessageAt?: string | null;
   unreadCount: number;
+  /** The partner's stated boundary, or null if they never set one. */
+  partnerBoundary: string | null;
+  /** False only when they stated a boundary you have not acknowledged yet. */
+  boundaryAcknowledged: boolean;
 }
 
 /** `sending` and `failed` mark optimistic bubbles that the server has not accepted yet. */
