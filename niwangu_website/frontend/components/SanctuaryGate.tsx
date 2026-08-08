@@ -561,22 +561,37 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <footer className="bg-white px-6 pb-10 pt-12 text-midnight sm:px-10 lg:px-14">
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="flex items-center gap-3 text-sageDeep">
-              <NiwanguLogo className="h-10 w-10" />
-              <span className="font-serif text-2xl text-midnight">Niwangu</span>
-            </div>
-            <p className="mt-3 text-sm text-midnight/70">&copy; {currentYear} Niwangu. All rights reserved.</p>
-          </div>
-          <nav className="flex flex-wrap gap-x-5 gap-y-3 text-sm" aria-label="Footer navigation">
+      {/* Three parts on one line at desktop — brand, navigation, copyright —
+          rather than a stacked brand block, which is what made this tall. */}
+      <footer className="bg-white px-6 py-7 text-midnight sm:px-10 lg:px-14">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-5 text-center md:flex-row md:justify-between md:gap-8 md:text-left">
+          <a
+            href="/"
+            className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-midnight"
+            aria-label="Niwangu home"
+          >
+            <NiwanguLogo className="h-7 w-7" />
+            <span className="text-base font-semibold tracking-tight text-midnight">Niwangu</span>
+          </a>
+
+          <nav
+            className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-midnight/80"
+            aria-label="Footer navigation"
+          >
             {footerLinks.map((link) => (
-              <a key={link.href} href={link.href} className="hover:text-sageDeep">
+              <a
+                key={link.href}
+                href={link.href}
+                className="rounded-sm transition-colors hover:text-sageDeep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-midnight"
+              >
                 {link.label}
               </a>
             ))}
           </nav>
+
+          <p className="shrink-0 text-xs text-midnight/70">
+            &copy; {currentYear} Niwangu. All rights reserved.
+          </p>
         </div>
       </footer>
     </motion.main>
