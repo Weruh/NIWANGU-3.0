@@ -15,7 +15,7 @@ import {
 import { useSanctuaryStore } from "../store";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
-import type { PricingPlanOption } from "../types";
+import type { PricingPlanGroup, PricingPlanOption } from "../types";
 
 export const ThePricing: FC = () => {
   const {
@@ -40,7 +40,14 @@ export const ThePricing: FC = () => {
     })),
   );
 
-  const [activeTab, setActiveTab] = useState<"monthly" | "yearly">("monthly");
+  const [activeGroup, setActiveGroup] = useState<PricingPlanGroup>("standard");
+  const visiblePlans = plans.filter((plan) => plan.group === activeGroup);
+  // Two or three cards stretched across a five-column grid look stranded, so the
+  // track count and max width follow how many plans the tab actually has.
+  const gridLayout =
+    visiblePlans.length <= 2
+      ? "max-w-3xl sm:grid-cols-2"
+      : "max-w-5xl sm:grid-cols-2 lg:grid-cols-3";
   const [selectedCheckoutPlan, setSelectedCheckoutPlan] =
     useState<PricingPlanOption | null>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -106,27 +113,43 @@ export const ThePricing: FC = () => {
           </p>
 
           {/* Toggle Switch Pill */}
-          <div className="inline-flex items-center rounded-full bg-white/70 border border-midnight/15 p-1 shadow-sm">
+          <div
+            role="tablist"
+            aria-label="Plan length"
+            className="inline-flex items-center rounded-full bg-white/70 border border-midnight/15 p-1 shadow-sm"
+          >
             <button
-              onClick={() => setActiveTab("monthly")}
-              className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                activeTab === "monthly"
+              type="button"
+              role="tab"
+              aria-selected={activeGroup === "standard"}
+              onClick={() => setActiveGroup("standard")}
+              className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                activeGroup === "standard"
                   ? "bg-midnight text-sandstone shadow"
-                  : "text-midnight/80 hover:text-midnight"
+                  : "text-midnight/70 hover:text-midnight"
               }`}
             >
               Standard Passes
             </button>
             <button
-              onClick={() => setActiveTab("yearly")}
-              className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                activeTab === "yearly"
+              type="button"
+              role="tab"
+              aria-selected={activeGroup === "long_term"}
+              onClick={() => setActiveGroup("long_term")}
+              className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                activeGroup === "long_term"
                   ? "bg-midnight text-sandstone shadow"
-                  : "text-midnight/80 hover:text-midnight"
+                  : "text-midnight/70 hover:text-midnight"
               }`}
             >
-              Long-Term{" "}
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
+              Long-Term
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                  activeGroup === "long_term"
+                    ? "bg-sandstone/20 text-sandstone"
+                    : "bg-emerald-100 text-emerald-800"
+                }`}
+              >
                 Save 25%
               </span>
             </button>
@@ -145,12 +168,21 @@ export const ThePricing: FC = () => {
           </p>
         )}
 
+        {/* Plans come from the database, so a tab can legitimately end up empty
+            if those rows are deactivated. Say so rather than render a blank. */}
+        {!plansLoading && plans.length > 0 && visiblePlans.length === 0 && (
+          <p className="text-center text-sm text-midnight/80 mb-14">
+            No {activeGroup === "standard" ? "standard" : "long-term"} passes are
+            available right now.
+          </p>
+        )}
+
         {/* Pricing cards.
             Every card runs the same vertical rhythm — badge slot, title, price,
             description, divider, features, CTA — so the rows line up across the
             grid regardless of how many features a plan lists. */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-14 items-stretch">
-          {plans.map((card) => {
+        <div className={`mx-auto w-full grid gap-5 mb-14 items-stretch ${gridLayout}`}>
+          {visiblePlans.map((card) => {
             const isPopular = card.isPopular;
             const isDark = card.isDark;
             const badgeText = isPopular ? "Most Popular" : card.badge;

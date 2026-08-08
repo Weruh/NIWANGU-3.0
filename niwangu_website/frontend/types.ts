@@ -5,12 +5,16 @@ export type PaidPricingPlan = Exclude<PricingPlan, 'free'>;
 export type SwipeDirection = 'like' | 'pass';
 export type PaymentState = 'pending' | 'completed' | 'failed' | 'amount_mismatch';
 
+/** Which tab of the pricing page a plan belongs to. */
+export type PricingPlanGroup = 'standard' | 'long_term';
+
 /** A plan as shown in the UI: price and duration from the database, copy from lib/plans. */
 export interface PricingPlanOption {
   id: PaidPricingPlan;
   label: string;
   priceKsh: number;
   durationDays: number;
+  group: PricingPlanGroup;
   period: string;
   description: string;
   features: string[];

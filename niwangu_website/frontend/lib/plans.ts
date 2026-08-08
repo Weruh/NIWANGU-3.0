@@ -11,6 +11,7 @@ import { getSupabase } from './supabase';
  */
 const PLAN_PRESENTATION: Record<PaidPricingPlan, Omit<PricingPlanOption, 'id' | 'label' | 'priceKsh' | 'durationDays'>> = {
   '7_days': {
+    group: 'standard',
     period: '/ 7 days',
     description: 'Low-friction entry to test Premium features.',
     badge: 'Trial',
@@ -22,6 +23,7 @@ const PLAN_PRESENTATION: Record<PaidPricingPlan, Omit<PricingPlanOption, 'id' | 
     ],
   },
   '30_days': {
+    group: 'standard',
     period: '/ month',
     description: 'Recommended impulse entry point for members.',
     badge: 'Most Popular',
@@ -35,6 +37,7 @@ const PLAN_PRESENTATION: Record<PaidPricingPlan, Omit<PricingPlanOption, 'id' | 
     ],
   },
   '90_days': {
+    group: 'long_term',
     period: '/ 3 months',
     description: 'Quarterly access for intentional matching.',
     features: [
@@ -46,6 +49,7 @@ const PLAN_PRESENTATION: Record<PaidPricingPlan, Omit<PricingPlanOption, 'id' | 
     ],
   },
   '180_days': {
+    group: 'long_term',
     period: '/ 6 months',
     description: 'Half a year of uninterrupted access.',
     features: [
@@ -56,6 +60,7 @@ const PLAN_PRESENTATION: Record<PaidPricingPlan, Omit<PricingPlanOption, 'id' | 
     ],
   },
   '365_days': {
+    group: 'long_term',
     period: '/ year',
     description: 'Maximum savings & long-term connection.',
     badge: 'Best Value',
