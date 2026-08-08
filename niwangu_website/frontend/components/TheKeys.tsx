@@ -6,11 +6,10 @@ import { Button } from './Button';
 import { ArrowLeft } from 'lucide-react';
 
 export const TheKeys: FC = () => {
-  const { setView, signIn, isBusy, infoMessage, clearMessages } = useSanctuaryStore(useShallow((state) => ({
+  const { setView, signIn, isBusy, clearMessages } = useSanctuaryStore(useShallow((state) => ({
     setView: state.setView,
     signIn: state.signIn,
     isBusy: state.isBusy,
-    infoMessage: state.infoMessage,
     clearMessages: state.clearMessages,
   })));
   const [email, setEmail] = useState('');
@@ -42,21 +41,21 @@ export const TheKeys: FC = () => {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="min-h-screen bg-sandstone flex flex-col p-6"
+      className="min-h-dvh bg-sandstone flex flex-col p-6"
     >
       <button
         onClick={() => {
           clearMessages();
           setView('home');
         }}
-        className="self-start p-2 text-midnight/60 hover:text-midnight transition-colors"
+        className="self-start p-2 text-midnight/80 hover:text-midnight transition-colors"
       >
         <ArrowLeft className="w-6 h-6" />
       </button>
 
       <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
         <h2 className="font-serif text-4xl text-midnight mb-2">The Keys</h2>
-        <p className="text-midnight/70 mb-10 font-light">Sign in with your Supabase account.</p>
+        <p className="text-midnight/80 mb-10 font-light">Sign in with your Supabase account.</p>
 
         <motion.form
           onSubmit={(event) => {
@@ -93,7 +92,7 @@ export const TheKeys: FC = () => {
             />
           </div>
 
-          {infoMessage && <p className="text-sm text-sage">{infoMessage}</p>}
+          {/* infoMessage is rendered globally in App.tsx. */}
           {error && <p className="text-sm text-red-800">{error}</p>}
 
           <Button type="submit" className="mt-4" disabled={isBusy}>

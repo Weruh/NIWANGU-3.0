@@ -274,12 +274,14 @@ const HeroGallery = () => (
   <div className="hero-gallery-viewport" aria-hidden="true">
     {galleryPanels.map((panel, panelIndex) => (
       <div
-        key={panel.map((image) => image.src).join('-')}
+        // Keyed by position: the same photo appears more than once in a panel,
+        // so a src-based key was not unique and React warned about it.
+        key={panelIndex}
         className="hero-gallery-panel"
         style={{ animationDelay: `${panelIndex * 3 - 0.7}s` }}
       >
         {panel.map((image, imageIndex) => (
-          <div key={`${image.src}-${panelIndex}`} className={`hero-gallery-card hero-gallery-card-${imageIndex + 1}`}>
+          <div key={`${panelIndex}-${imageIndex}`} className={`hero-gallery-card hero-gallery-card-${imageIndex + 1}`}>
             <OptimizedImage
               src={image.src}
               alt={image.alt}
@@ -304,11 +306,11 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="min-h-screen bg-sandstone text-midnight"
+    className="min-h-dvh bg-sandstone text-midnight"
   >
     <header className="border-b border-midnight/10 bg-white/70 px-6 py-5 backdrop-blur sm:px-10 lg:px-14">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6">
-        <a href="/" className="flex items-center gap-3 text-sage" aria-label="Return to Niwangu homepage">
+        <a href="/" className="flex items-center gap-3 text-sageDeep" aria-label="Return to Niwangu homepage">
           <NiwanguLogo className="h-10 w-10" />
           <span className="font-serif text-2xl text-midnight">Niwangu</span>
         </a>
@@ -323,7 +325,7 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
 
     <section className="px-6 py-16 sm:px-10 sm:py-20 lg:px-14">
       <div className="mx-auto max-w-4xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sage">{page.eyebrow}</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">{page.eyebrow}</p>
         <h1 className="mt-4 font-serif text-5xl leading-tight text-midnight sm:text-6xl">{page.title}</h1>
         <p className="mt-6 max-w-3xl text-lg leading-8 text-midnight/72">{page.intro}</p>
 
@@ -331,12 +333,12 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
           {page.sections.map((section) => (
             <article key={section.title} className="rounded-lg border border-midnight/10 bg-white p-6 shadow-sm">
               <h2 className="font-serif text-2xl text-midnight">{section.title}</h2>
-              <p className="mt-3 leading-7 text-midnight/70">{section.body}</p>
+              <p className="mt-3 leading-7 text-midnight/80">{section.body}</p>
             </article>
           ))}
         </div>
 
-        <p className="mt-10 text-sm text-midnight/55">
+        <p className="mt-10 text-sm text-midnight/80">
           Last updated {currentYear}. For formal legal or privacy requests, contact the Niwangu team directly.
         </p>
       </div>
@@ -366,10 +368,10 @@ export const SanctuaryGate: FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen overflow-hidden bg-sandstone text-midnight"
+      className="min-h-dvh overflow-hidden bg-sandstone text-midnight"
     >
-      <section className="relative grid min-h-screen grid-cols-1 lg:grid-cols-2">
-        <div className="relative min-h-[46vh] overflow-hidden bg-[#f8d5dd] lg:min-h-screen">
+      <section className="relative grid min-h-dvh grid-cols-1 lg:grid-cols-2">
+        <div className="relative min-h-[46vh] overflow-hidden bg-[#f8d5dd] lg:min-h-dvh">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.75),transparent_32%),linear-gradient(135deg,rgba(240,98,146,0.2),rgba(74,59,66,0.18))]" />
           <HeroGallery />
         </div>
@@ -377,11 +379,11 @@ export const SanctuaryGate: FC = () => {
         <div className="relative flex items-center bg-sandstone px-6 py-12 sm:px-10 lg:px-16 xl:px-20">
           <div className="mx-auto w-full max-w-[560px]">
             <div className="mb-12 flex items-center gap-5">
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-white text-sage shadow-xl shadow-sage/15 ring-1 ring-sage/10">
+              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-white text-sageDeep shadow-xl shadow-sage/15 ring-1 ring-sage/10">
                 <NiwanguLogo className="h-11 w-11" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sage sm:text-sm">Niwangu</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sageDeep sm:text-sm">Niwangu</p>
                 <p className="mt-1 font-serif text-2xl leading-none text-midnight sm:text-3xl">Love, with Intention.</p>
               </div>
             </div>
@@ -438,7 +440,7 @@ export const SanctuaryGate: FC = () => {
       <section className="relative bg-white px-6 pb-28 pt-14 sm:px-10 sm:pt-16 lg:px-14" aria-labelledby="how-it-works">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sage">How it works</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">How it works</p>
             <h2 id="how-it-works" className="mt-3 font-serif text-4xl text-midnight sm:text-5xl">
               Built for connection with care.
             </h2>
@@ -448,7 +450,7 @@ export const SanctuaryGate: FC = () => {
               const Icon = step.icon;
               return (
                 <article key={step.title} className="rounded-lg border border-midnight/10 bg-sandstone/70 p-6">
-                  <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-full bg-white text-sage shadow-sm">
+                  <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-full bg-white text-sageDeep shadow-sm">
                     <Icon className="h-6 w-6" aria-hidden="true" />
                   </div>
                   <h3 className="font-serif text-2xl text-midnight">{step.title}</h3>
@@ -507,7 +509,7 @@ export const SanctuaryGate: FC = () => {
                   />
                   <div>
                     <p className="font-semibold">{testimonial.name}</p>
-                    <div className="mt-1 flex gap-1 text-sage" aria-label="Five star rating">
+                    <div className="mt-1 flex gap-1 text-sageDeep" aria-label="Five star rating">
                       {Array.from({ length: 5 }).map((_, index) => (
                         <Star key={index} className="h-4 w-4 fill-current" aria-hidden="true" />
                       ))}
@@ -549,7 +551,7 @@ export const SanctuaryGate: FC = () => {
       <footer className="bg-white px-6 pb-10 pt-12 text-midnight sm:px-10 lg:px-14">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="flex items-center gap-3 text-sage">
+            <div className="flex items-center gap-3 text-sageDeep">
               <NiwanguLogo className="h-10 w-10" />
               <span className="font-serif text-2xl text-midnight">Niwangu</span>
             </div>
@@ -557,7 +559,7 @@ export const SanctuaryGate: FC = () => {
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-3 text-sm" aria-label="Footer navigation">
             {footerLinks.map((link) => (
-              <a key={link.href} href={link.href} className="hover:text-sage">
+              <a key={link.href} href={link.href} className="hover:text-sageDeep">
                 {link.label}
               </a>
             ))}

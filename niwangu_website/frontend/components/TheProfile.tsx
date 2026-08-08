@@ -79,15 +79,15 @@ export const TheProfile: FC = () => {
 
   if (!currentProfile) {
     return (
-      <div className="min-h-screen bg-sandstone p-6 text-midnight">
-        <p className="text-midnight/60">Loading profile...</p>
+      <div className="min-h-dvh bg-sandstone p-6 text-midnight">
+        <p className="text-midnight/80">Loading profile...</p>
       </div>
     );
   }
 
   return (
     <motion.div
-      className="min-h-screen bg-sandstone p-6 text-midnight"
+      className="min-h-dvh bg-sandstone p-6 text-midnight"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
@@ -95,12 +95,17 @@ export const TheProfile: FC = () => {
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <button onClick={() => setView(currentProfile.profileReady ? 'gallery' : 'essence')} className="rounded-full p-2 hover:bg-black/5">
-              <ArrowLeft className="h-6 w-6" />
+            <button
+              type="button"
+              onClick={() => setView(currentProfile.profileReady ? 'gallery' : 'essence')}
+              aria-label="Go back"
+              className="rounded-full p-2 hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight"
+            >
+              <ArrowLeft className="h-6 w-6" aria-hidden="true" />
             </button>
             <div>
               <h2 className="font-serif text-4xl">Your Profile</h2>
-              <p className="text-sm text-midnight/60">View and edit the details people see before matching.</p>
+              <p className="text-sm text-midnight/80">View and edit the details people see before matching.</p>
             </div>
           </div>
         </div>

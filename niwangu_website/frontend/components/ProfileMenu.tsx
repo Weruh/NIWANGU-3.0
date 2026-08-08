@@ -87,7 +87,7 @@ export const ProfileMenu: FC<{
             <p className="font-serif text-lg leading-tight">
               {currentProfile?.name || "Your Profile"}
             </p>
-            <p className="text-xs text-midnight/55">
+            <p className="text-xs text-midnight/80">
               {currentProfile?.location || "Niwangu account"}
             </p>
           </div>
@@ -98,7 +98,7 @@ export const ProfileMenu: FC<{
               className="flex w-full items-center justify-between rounded-md px-2 py-2.5 text-left text-sm hover:bg-midnight/5 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <MessageSquare className="h-4 w-4 text-midnight/70" />
+                <MessageSquare className="h-4 w-4 text-midnight/80" />
                 <span>Chats</span>
               </div>
               <span className="rounded-full bg-midnight/10 px-2 py-0.5 text-xs font-semibold text-midnight">
@@ -111,10 +111,10 @@ export const ProfileMenu: FC<{
               className="flex w-full items-center justify-between rounded-md px-2 py-2.5 text-left text-sm hover:bg-midnight/5 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Sparkles className="h-4 w-4 text-midnight/70" />
+                <Sparkles className="h-4 w-4 text-midnight/80" />
                 <span>Subscription</span>
               </div>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isPremium ? 'bg-emerald-100 text-emerald-800' : 'bg-midnight/10 text-midnight/70'}`}>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isPremium ? 'bg-emerald-100 text-emerald-800' : 'bg-midnight/10 text-midnight/80'}`}>
                 {isPremium ? 'Active' : `${remainingViews} views left`}
               </span>
             </button>
@@ -128,7 +128,7 @@ export const ProfileMenu: FC<{
               }}
               className="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left text-sm hover:bg-midnight/5 transition-colors"
             >
-              <Edit3 className="h-4 w-4 text-midnight/70" />
+              <Edit3 className="h-4 w-4 text-midnight/80" />
               <span>View and edit profile</span>
             </button>
 

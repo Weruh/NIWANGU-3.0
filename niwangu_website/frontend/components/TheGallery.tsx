@@ -7,20 +7,16 @@ import { Heart, X } from 'lucide-react';
 import { ProfileMenu } from './ProfileMenu';
 import { OptimizedImage } from './OptimizedImage';
 import { optimizeImageUrl } from '../lib/images';
-import { PaymentWindow } from './PaymentWindow';
-import type { PricingPlan } from '../types';
 
 export const TheGallery: FC = () => {
   const {
     galleryProfiles,
     galleryLoading,
+    galleryLoaded,
     profileViewsUsed,
     dailyProfileViews,
     paymentRequired,
-    paymentAmountKsh,
-    profileViewLockUntil,
     isPremium,
-    unlockPremium,
     swipeProfile,
     loadGallery,
     activeChats,
@@ -28,13 +24,11 @@ export const TheGallery: FC = () => {
   } = useSanctuaryStore(useShallow((state) => ({
     galleryProfiles: state.galleryProfiles,
     galleryLoading: state.galleryLoading,
+    galleryLoaded: state.galleryLoaded,
     profileViewsUsed: state.profileViewsUsed,
     dailyProfileViews: state.dailyProfileViews,
     paymentRequired: state.paymentRequired,
-    paymentAmountKsh: state.paymentAmountKsh,
-    profileViewLockUntil: state.profileViewLockUntil,
     isPremium: state.isPremium,
-    unlockPremium: state.unlockPremium,
     swipeProfile: state.swipeProfile,
     loadGallery: state.loadGallery,
     activeChats: state.activeChats,
@@ -43,16 +37,28 @@ export const TheGallery: FC = () => {
 
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const [blurAmount, setBlurAmount] = useState(20);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [matchedName, setMatchedName] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const paywalled = paymentRequired && !isPremium;
+
+  // Keyed on "have we tried yet", not "is the list empty". Keying on the length
+  // meant a legitimately empty gallery re-triggered the fetch forever, pinning
+  // the loading screen on and wiping the error toast on every pass. Restocking
+  // after swipes is handled by swipeProfile.
   useEffect(() => {
-    if (galleryProfiles.length === 0 && !galleryLoading) {
+    if (!galleryLoaded && !galleryLoading) {
       void loadGallery();
     }
-  }, [galleryLoading, galleryProfiles.length, loadGallery]);
+  }, [galleryLoaded, galleryLoading, loadGallery]);
+
+  // Navigating is a side effect, so it belongs here rather than in the render
+  // body where it triggered a React update-during-render warning.
+  useEffect(() => {
+    if (paywalled) {
+      setView('pricing');
+    }
+  }, [paywalled, setView]);
 
   useEffect(() => {
     if (currentProfileIndex >= galleryProfiles.length) {
@@ -114,36 +120,22 @@ export const TheGallery: FC = () => {
     resetCardState();
   };
 
-  const handlePayment = (planId: PricingPlan, phoneNumber: string) => {
-    setPaymentProcessing(true);
-    setTimeout(() => {
-      void unlockPremium(planId, phoneNumber)
-        .catch(() => {
-          // The store already surfaces the failure through errorMessage.
-        })
-        .finally(() => {
-          setPaymentProcessing(false);
-          setShowPaywall(false);
-        });
-    }, 1200);
-  };
-
   if (galleryLoading && !currentProfile) {
     return (
-      <div className="h-screen bg-midnight text-sandstone flex items-center justify-center">
+      <div className="h-dvh bg-midnight text-sandstone flex items-center justify-center">
         <p className="text-sm tracking-widest uppercase">Loading intentional connections...</p>
       </div>
     );
   }
 
   if (!currentProfile) {
-    if (paymentRequired && !isPremium) {
-      setView('pricing');
+    // The effect above is already navigating to the pricing view.
+    if (paywalled) {
       return null;
     }
 
     return (
-      <div className="h-screen bg-midnight text-sandstone flex flex-col items-center justify-center p-6 text-center">
+      <div className="h-dvh bg-midnight text-sandstone flex flex-col items-center justify-center p-6 text-center">
         <h2 className="font-serif text-4xl mb-4">The Gallery Is Quiet</h2>
         <p className="text-sandstone/70 max-w-md mb-8">
           You have reached the end of the current candidate set. Return shortly as more members join.
@@ -160,7 +152,7 @@ export const TheGallery: FC = () => {
   }
 
   return (
-    <div className="h-screen bg-sandstone relative overflow-hidden flex flex-col">
+    <div className="h-dvh bg-sandstone relative overflow-hidden flex flex-col">
       <div className="absolute top-0 left-0 right-0 z-50 p-4 flex justify-between items-center pointer-events-none">
         <h1 className="font-serif text-xl text-sandstone drop-shadow-md">Niwangu</h1>
         <div className="flex items-center gap-2 pointer-events-auto">
@@ -174,7 +166,7 @@ export const TheGallery: FC = () => {
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            className="absolute top-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-sage px-5 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-xl"
+            className="absolute top-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-sageDeep px-5 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-xl"
           >
             Match with {matchedName}
           </motion.div>
@@ -204,9 +196,9 @@ export const TheGallery: FC = () => {
           onScroll={handleScroll}
           className="absolute inset-0 overflow-y-auto no-scrollbar snap-y snap-mandatory"
         >
-          <div className="h-[60vh] w-full snap-start" />
+          <div className="h-[60dvh] w-full snap-start" />
 
-          <div className="min-h-[60vh] bg-gradient-to-t from-midnight/70 via-midnight/45 to-transparent pt-20 pb-32 px-6 flex flex-col justify-end text-sandstone snap-start">
+          <div className="min-h-[60dvh] bg-gradient-to-t from-midnight/70 via-midnight/45 to-transparent pt-20 pb-32 px-6 flex flex-col justify-end text-sandstone snap-start">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} className="max-w-md mx-auto w-full">
               <span className="inline-block px-3 py-1 border border-sandstone/30 rounded-full text-xs mb-4 uppercase tracking-widest">
                 {currentProfile.ritualAnswers[1]}
@@ -215,14 +207,14 @@ export const TheGallery: FC = () => {
               <h2 className="font-serif text-5xl mb-2">
                 {currentProfile.name}, {currentProfile.age}
               </h2>
-              <p className="text-sandstone/60 mb-8 flex items-center gap-2">
+              <p className="text-sandstone/70 mb-8 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-sage" />
                 {currentProfile.distance}
               </p>
 
               <div className="space-y-8 mb-12">
                 <div>
-                  <h3 className="text-xs uppercase tracking-widest text-sage mb-2">The Boundary</h3>
+                  <h3 className="text-xs uppercase tracking-widest text-sageLight mb-2">The Boundary</h3>
                   <p className="font-serif text-xl leading-relaxed text-sandstone/90 border-l-2 border-sage pl-4 italic">
                     "{currentProfile.boundary}"
                   </p>
@@ -230,11 +222,11 @@ export const TheGallery: FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/5 p-4 rounded-lg backdrop-blur-sm">
-                    <h4 className="text-[10px] uppercase text-sandstone/50 mb-1">Core Value</h4>
+                    <h4 className="text-[10px] uppercase text-sandstone/70 mb-1">Core Value</h4>
                     <p className="font-medium">{currentProfile.ritualAnswers[6]}</p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-lg backdrop-blur-sm">
-                    <h4 className="text-[10px] uppercase text-sandstone/50 mb-1">Intent</h4>
+                    <h4 className="text-[10px] uppercase text-sandstone/70 mb-1">Intent</h4>
                     <p className="font-medium">{currentProfile.ritualAnswers[10]}</p>
                   </div>
                 </div>
@@ -248,20 +240,24 @@ export const TheGallery: FC = () => {
           style={{ opacity: Math.max(0, 1 - blurAmount / 5) }}
         >
           <button
+            type="button"
             onClick={() => {
               void handleAction('pass');
             }}
-            className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-red-500/20 hover:border-red-500 hover:text-red-100 transition-all pointer-events-auto"
+            aria-label={`Pass on ${currentProfile.name}`}
+            className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-red-500/20 hover:border-red-500 hover:text-red-100 transition-all pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            <X className="w-8 h-8" />
+            <X className="w-8 h-8" aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={() => {
               void handleAction('like');
             }}
-            className="w-16 h-16 rounded-full bg-sage text-white shadow-lg shadow-sage/30 flex items-center justify-center hover:scale-110 transition-all pointer-events-auto"
+            aria-label={`Like ${currentProfile.name}`}
+            className="w-16 h-16 rounded-full bg-sageDeep text-white shadow-lg shadow-sageDeep/30 flex items-center justify-center hover:scale-110 transition-all pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            <Heart className="w-8 h-8 fill-current" />
+            <Heart className="w-8 h-8 fill-current" aria-hidden="true" />
           </button>
         </motion.div>
 

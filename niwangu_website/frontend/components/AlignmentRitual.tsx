@@ -53,7 +53,7 @@ export const AlignmentRitual: FC = () => {
   if (!introFinished) {
     return (
       <motion.div
-        className="h-screen bg-midnight flex flex-col items-center justify-center p-8 text-center text-sandstone"
+        className="h-dvh bg-midnight flex flex-col items-center justify-center p-8 text-center text-sandstone"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -72,7 +72,7 @@ export const AlignmentRitual: FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-sandstone flex flex-col">
+    <div className="min-h-dvh bg-sandstone flex flex-col">
       <div className="w-full h-1 bg-midnight/10">
         <motion.div
           className="h-full bg-sage"
@@ -91,7 +91,7 @@ export const AlignmentRitual: FC = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col gap-8"
           >
-            <span className="text-sage font-medium tracking-widest text-xs uppercase">
+            <span className="text-sageDeep font-medium tracking-widest text-xs uppercase">
               Step {ritualStep + 1} of {RITUAL_QUESTIONS.length} - {currentQ.category}
             </span>
 
@@ -128,7 +128,7 @@ export const AlignmentRitual: FC = () => {
                   maxLength={currentQ.maxLength}
                   className="w-full h-40 bg-white/50 border border-midnight/20 rounded-lg p-4 focus:outline-none focus:border-sage text-midnight resize-none"
                 />
-                <div className="flex justify-between items-center text-xs text-midnight/50">
+                <div className="flex justify-between items-center text-xs text-midnight/80">
                   <span>
                     {textInput.length}/{currentQ.maxLength} characters
                   </span>

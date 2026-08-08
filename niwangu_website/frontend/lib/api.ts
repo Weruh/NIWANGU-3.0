@@ -5,7 +5,8 @@ import {
   Gender,
   MatchMessageRow,
   Message,
-  PricingPlan,
+  PaidPricingPlan,
+  PaymentState,
   ProfileViewStatus,
   ProfilePhoto,
   ProfileUpdateInput,
@@ -32,6 +33,7 @@ type ProfileRow = {
   onboarding_completed: boolean | null;
   profile_ready: boolean | null;
   is_premium: boolean | null;
+  premium_expires_at: string | null;
   daily_swipe_limit: number | null;
 };
 
@@ -70,6 +72,7 @@ type MatchRow = {
   is_closed: boolean;
   last_message: string | null;
   last_message_at: string | null;
+  unread_count: number | null;
 };
 
 type SwipeRpcRow = {
@@ -86,7 +89,20 @@ type ProfileViewStatusRow = {
   payment_amount_ksh: number;
 };
 
+type MpesaChargeResult = {
+  reference: string;
+  amount: number;
+  message: string;
+};
+
 const PROFILE_PHOTO_BUCKET = 'profile-photos';
+
+// is_premium stays true after a subscription lapses, so mirror the server's
+// has_active_premium() rule here. Otherwise the UI shows "Active" while every
+// gated RPC refuses.
+const hasActivePremium = (row: ProfileRow) =>
+  Boolean(row.is_premium) &&
+  (!row.premium_expires_at || new Date(row.premium_expires_at).getTime() > Date.now());
 
 const mapProfile = (row: ProfileRow): CurrentUserProfile => ({
   id: row.id,
@@ -102,7 +118,8 @@ const mapProfile = (row: ProfileRow): CurrentUserProfile => ({
   boundary: row.boundary ?? '',
   onboardingCompleted: Boolean(row.onboarding_completed),
   profileReady: Boolean(row.profile_ready),
-  isPremium: Boolean(row.is_premium),
+  isPremium: hasActivePremium(row),
+  premiumExpiresAt: row.premium_expires_at,
   dailySwipeLimit: row.daily_swipe_limit ?? 5,
 });
 
@@ -139,6 +156,7 @@ const mapChatSession = (row: MatchRow): ChatSession => ({
   isClosed: row.is_closed,
   lastMessage: row.last_message ?? '',
   lastMessageAt: row.last_message_at,
+  unreadCount: row.unread_count ?? 0,
 });
 
 const mapProfileViewStatus = (row: ProfileViewStatusRow | null | undefined): ProfileViewStatus => ({
@@ -146,7 +164,9 @@ const mapProfileViewStatus = (row: ProfileViewStatusRow | null | undefined): Pro
   remainingViews: row?.remaining_views ?? 5,
   isLocked: Boolean(row?.is_locked),
   lockedUntil: row?.locked_until ?? null,
-  paymentAmountKsh: row?.payment_amount_ksh ?? 2000,
+  // get_profile_view_status() returns the cheapest live plan; this only covers
+  // the row-missing case.
+  paymentAmountKsh: row?.payment_amount_ksh ?? 99,
 });
 
 export const getSession = async (): Promise<Session | null> => {
@@ -231,7 +251,7 @@ export const getMyProfile = async (): Promise<CurrentUserProfile | null> => {
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'id, auth_user_id, full_name, age, gender, seeking_gender, location, intent, core_value, why_niwangu, boundary, onboarding_completed, profile_ready, is_premium, daily_swipe_limit',
+      'id, auth_user_id, full_name, age, gender, seeking_gender, location, intent, core_value, why_niwangu, boundary, onboarding_completed, profile_ready, is_premium, premium_expires_at, daily_swipe_limit',
     )
     .eq('auth_user_id', user.id)
     .single();
@@ -472,19 +492,6 @@ export const finalizeProfileReadiness = async (profileId: string) => {
   }
 };
 
-export const choosePricingPlan = async (profileId: string, plan: PricingPlan) => {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      profile_ready: true,
-    })
-    .eq('id', profileId);
-
-  if (error) {
-    throw error;
-  }
-};
 
 export const getProfileViewStatus = async (): Promise<ProfileViewStatus> => {
   const supabase = getSupabase();
@@ -541,29 +548,23 @@ export const handleSwipe = async (
   };
 };
 
-export const requestStkPush = async (
+/**
+ * Starts an M-Pesa payment through Paystack. Only the plan and phone number are
+ * sent: the amount comes from pricing_plans and the profile (and the billing
+ * email Paystack needs) come from the caller's JWT, all resolved inside the
+ * edge function.
+ */
+export const requestMpesaCharge = async (
+  planId: PaidPricingPlan,
   phoneNumber: string,
-  planId: PricingPlan,
-  amount: number,
-  profileId: string,
-) => {
+): Promise<MpesaChargeResult> => {
   const supabase = getSupabase();
-  const days =
-    planId === '7_days' ? 7 :
-    planId === '30_days' ? 30 :
-    planId === '90_days' ? 90 :
-    planId === '180_days' ? 180 :
-    planId === '365_days' ? 365 : 30;
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + days);
 
   try {
-    const { data, error } = await supabase.functions.invoke('stk-push', {
+    const { data, error } = await supabase.functions.invoke('paystack-charge', {
       body: {
         phoneNumber,
         planId,
-        amount,
-        profileId,
       },
     });
 
@@ -582,47 +583,44 @@ export const requestStkPush = async (
           detail = raw;
         }
       }
-      console.error('STK push function invocation failed:', error, detail);
+      console.error('Paystack charge function invocation failed:', error, detail);
       throw new Error(detail || error.message || 'Unable to start the M-Pesa payment request.');
     }
 
-    if (!data?.success) {
+    if (!data?.success || !data?.reference) {
       throw new Error(data?.error || 'M-Pesa STK Push request failed.');
     }
 
-    return data;
+    return {
+      reference: data.reference as string,
+      amount: Number(data.amount),
+      message: (data.message as string) ?? '',
+    };
   } catch (err) {
-    console.error('STK push request failed:', err);
+    console.error('Paystack charge request failed:', err);
     throw err instanceof Error
       ? err
       : new Error('Unable to start M-Pesa payment. Please try again.');
   }
 };
 
-export const unlockPremium = async (planId: PricingPlan = '30_days') => {
+/**
+ * Reads the payment row the webhook writes to. Premium itself is only ever
+ * granted server-side by complete_payment(); this is a read-only poll.
+ */
+export const getPaymentState = async (reference: string): Promise<PaymentState | null> => {
   const supabase = getSupabase();
-  const user = await getCurrentUser();
-  const days =
-    planId === '7_days' ? 7 :
-    planId === '30_days' ? 30 :
-    planId === '90_days' ? 90 :
-    planId === '180_days' ? 180 :
-    planId === '365_days' ? 365 : 30;
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + days);
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      is_premium: true,
-      subscription_plan: planId,
-      premium_expires_at: expiresAt.toISOString(),
-    })
-    .eq('auth_user_id', user.id);
+  const { data, error } = await supabase
+    .from('payments')
+    .select('status')
+    .eq('reference', reference)
+    .maybeSingle();
 
   if (error) {
-    await supabase.rpc('unlock_premium_after_payment');
+    throw error;
   }
+
+  return (data?.status as PaymentState | undefined) ?? null;
 };
 
 export const listMatches = async () => {
@@ -636,27 +634,53 @@ export const listMatches = async () => {
   return (data as MatchRow[]).map(mapChatSession);
 };
 
-export const listMatchMessages = async (matchId: string, currentProfileId: string) => {
+export const MESSAGE_PAGE_SIZE = 40;
+
+const toMessage = (row: MatchMessageRow, currentProfileId: string): Message => ({
+  id: row.id,
+  sender: row.is_system
+    ? 'system'
+    : row.sender_profile_id === currentProfileId
+      ? 'me'
+      : 'partner',
+  text: row.body,
+  timestamp: new Date(row.created_at).getTime(),
+  isSystem: row.is_system,
+  status: 'sent',
+});
+
+/**
+ * Returns a page of messages oldest-first. `before` pages backwards through
+ * history; `after` catches up from a cursor, which is how a reconnecting client
+ * fills the gap it missed.
+ */
+export const listMatchMessages = async (
+  matchId: string,
+  currentProfileId: string,
+  options: { limit?: number; before?: number; after?: number } = {},
+) => {
   const supabase = getSupabase();
   const { data, error } = await supabase.rpc('get_match_messages', {
     p_match_id: matchId,
+    p_limit: options.limit ?? MESSAGE_PAGE_SIZE,
+    p_before: options.before ? new Date(options.before).toISOString() : null,
+    p_after: options.after ? new Date(options.after).toISOString() : null,
   });
 
   if (error) {
     throw error;
   }
 
-  return (data as MatchMessageRow[]).map<Message>((row) => ({
-    id: row.id,
-    sender: row.is_system
-      ? 'system'
-      : row.sender_profile_id === currentProfileId
-        ? 'me'
-        : 'partner',
-    text: row.body,
-    timestamp: new Date(row.created_at).getTime(),
-    isSystem: row.is_system,
-  }));
+  return (data as MatchMessageRow[]).map((row) => toMessage(row, currentProfileId));
+};
+
+export const markMatchRead = async (matchId: string) => {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('mark_match_read', { p_match_id: matchId });
+
+  if (error) {
+    throw error;
+  }
 };
 
 export const sendMatchMessage = async (matchId: string, body: string) => {
@@ -683,29 +707,91 @@ export const closeMatch = async (matchId: string, reason: string) => {
   }
 };
 
-export const subscribeToMatchChanges = (onChange: () => void) => {
+/**
+ * Watches the signed-in member's own matches. The match subscriptions are
+ * filtered to their participant columns; the message stream cannot be filtered
+ * by "matches I belong to" in postgres_changes, so RLS does that server-side and
+ * the burst of events it produces is debounced into a single refresh here.
+ */
+export const subscribeToMatchChanges = (profileId: string, onChange: () => void) => {
   const supabase = getSupabase();
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const scheduleRefresh = () => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(onChange, 300);
+  };
+
   const channel = supabase
     .channel(`matches-feed-${crypto.randomUUID()}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onChange)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'matches', filter: `profile_low_id=eq.${profileId}` },
+      scheduleRefresh,
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'matches', filter: `profile_high_id=eq.${profileId}` },
+      scheduleRefresh,
+    )
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, scheduleRefresh)
     .subscribe();
 
   return () => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
     void supabase.removeChannel(channel);
   };
 };
 
-export const subscribeToMatchMessages = (matchId: string, onChange: () => void) => {
+/**
+ * Delivers each new message directly from the realtime payload, so an open
+ * conversation never refetches its history just to show one new bubble.
+ */
+export const subscribeToMatchMessages = (
+  matchId: string,
+  currentProfileId: string,
+  onMessage: (message: Message) => void,
+  onResubscribe: () => void,
+) => {
   const supabase = getSupabase();
   const channel = supabase
     .channel(`match-${matchId}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
-      onChange,
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
+      (payload) => {
+        const row = payload.new as Partial<MatchMessageRow> & { match_id?: string };
+
+        if (!row?.id || !row.created_at || typeof row.body !== 'string') {
+          return;
+        }
+
+        onMessage(
+          toMessage(
+            {
+              id: row.id,
+              sender_profile_id: row.sender_profile_id ?? '',
+              body: row.body,
+              created_at: row.created_at,
+              is_system: Boolean(row.is_system),
+            },
+            currentProfileId,
+          ),
+        );
+      },
     )
-    .subscribe();
+    .subscribe((status) => {
+      // A dropped socket can lose messages, so fill the gap on reconnect.
+      if (status === 'SUBSCRIBED') {
+        onResubscribe();
+      }
+    });
 
   return () => {
     void supabase.removeChannel(channel);

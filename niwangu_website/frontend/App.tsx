@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from './store';
 
@@ -14,7 +14,7 @@ const TheParlor = lazy(() => import('./components/TheParlor').then((module) => (
 const TheProfile = lazy(() => import('./components/TheProfile').then((module) => ({ default: module.TheProfile })));
 
 const BootScreen = ({ message }: { message: string }) => (
-  <div className="min-h-screen bg-midnight text-sandstone flex items-center justify-center p-6">
+  <div className="min-h-dvh bg-midnight text-sandstone flex items-center justify-center p-6">
     <div className="text-center max-w-md">
       <div className="w-10 h-10 border-2 border-sandstone/30 border-t-sandstone rounded-full animate-spin mx-auto mb-4" />
       <p className="font-serif text-2xl mb-2">Niwangu</p>
@@ -29,6 +29,7 @@ export default function App() {
     sessionReady,
     backendConfigured,
     errorMessage,
+    infoMessage,
     initializeApp,
     listenForAuthChanges,
   } = useSanctuaryStore(useShallow((state) => ({
@@ -36,6 +37,7 @@ export default function App() {
     sessionReady: state.sessionReady,
     backendConfigured: state.backendConfigured,
     errorMessage: state.errorMessage,
+    infoMessage: state.infoMessage,
     initializeApp: state.initializeApp,
     listenForAuthChanges: state.listenForAuthChanges,
   })));
@@ -56,12 +58,24 @@ export default function App() {
   }
 
   return (
-    <>
-      {errorMessage && (
-        <div className="fixed top-4 left-1/2 z-[100] -translate-x-1/2 rounded-full bg-red-900 px-5 py-3 text-xs text-white shadow-xl">
-          {errorMessage}
-        </div>
-      )}
+    // reducedMotion="user" makes Framer Motion honour the OS setting, which the
+    // CSS media query alone cannot do for JS-driven animation.
+    <MotionConfig reducedMotion="user">
+      {/* Errors and payment progress are announced here so they survive view
+          changes, e.g. while the Paystack webhook is still pending. */}
+      <div aria-live="polite" role="status">
+        {errorMessage && (
+          <div className="fixed top-4 left-1/2 z-[100] max-w-[90vw] -translate-x-1/2 rounded-full bg-red-900 px-5 py-3 text-center text-xs text-white shadow-xl">
+            {errorMessage}
+          </div>
+        )}
+
+        {!errorMessage && infoMessage && (
+          <div className="fixed top-4 left-1/2 z-[100] max-w-[90vw] -translate-x-1/2 rounded-full bg-midnight px-5 py-3 text-center text-xs text-sandstone shadow-xl">
+            {infoMessage}
+          </div>
+        )}
+      </div>
 
       <Suspense fallback={<BootScreen message="Opening Niwangu..." />}>
         <AnimatePresence mode="wait">
@@ -76,6 +90,6 @@ export default function App() {
           {view === 'profile' && <TheProfile key="profile" />}
         </AnimatePresence>
       </Suspense>
-    </>
+    </MotionConfig>
   );
 }

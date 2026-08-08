@@ -1,7 +1,23 @@
 export type ViewState = 'home' | 'auth' | 'register' | 'ritual' | 'essence' | 'pricing' | 'gallery' | 'parlor' | 'profile';
 export type Gender = 'female' | 'male';
 export type PricingPlan = 'free' | '7_days' | '30_days' | '90_days' | '180_days' | '365_days';
+export type PaidPricingPlan = Exclude<PricingPlan, 'free'>;
 export type SwipeDirection = 'like' | 'pass';
+export type PaymentState = 'pending' | 'completed' | 'failed' | 'amount_mismatch';
+
+/** A plan as shown in the UI: price and duration from the database, copy from lib/plans. */
+export interface PricingPlanOption {
+  id: PaidPricingPlan;
+  label: string;
+  priceKsh: number;
+  durationDays: number;
+  period: string;
+  description: string;
+  features: string[];
+  badge?: string;
+  isPopular?: boolean;
+  isDark?: boolean;
+}
 
 export interface UserProfile {
   id: string;
@@ -28,7 +44,9 @@ export interface CurrentUserProfile {
   boundary: string;
   onboardingCompleted: boolean;
   profileReady: boolean;
+  /** True only while the subscription is also unexpired, matching has_active_premium() server-side. */
   isPremium: boolean;
+  premiumExpiresAt: string | null;
   dailySwipeLimit: number;
 }
 
@@ -70,7 +88,11 @@ export interface ChatSession {
   isClosed: boolean;
   lastMessage?: string;
   lastMessageAt?: string | null;
+  unreadCount: number;
 }
+
+/** `sending` and `failed` mark optimistic bubbles that the server has not accepted yet. */
+export type MessageStatus = 'sending' | 'sent' | 'failed';
 
 export interface Message {
   id: string;
@@ -78,6 +100,7 @@ export interface Message {
   text: string;
   timestamp: number;
   isSystem?: boolean;
+  status: MessageStatus;
 }
 
 export interface MatchMessageRow {

@@ -32,10 +32,10 @@ export const TheEssence: FC = () => {
   };
 
   return (
-    <motion.div className="min-h-screen bg-sandstone flex flex-col p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="min-h-dvh bg-sandstone flex flex-col p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex-1 max-w-4xl mx-auto w-full flex flex-col justify-center">
         <h2 className="font-serif text-4xl text-midnight mb-2">The Essence</h2>
-        <p className="text-midnight/70 mb-8 font-light">
+        <p className="text-midnight/80 mb-8 font-light">
           Upload exactly 3 images from your device.
         </p>
 
@@ -52,12 +52,15 @@ export const TheEssence: FC = () => {
                   <>
                     <OptimizedImage src={photo.url} alt="Essence" srcWidth={480} srcSetWidths={[320, 480, 640]} sizes="(min-width: 768px) 33vw, 100vw" className="w-full h-full object-cover" />
                     <button
+                      type="button"
                       onClick={() => {
                         void handleRemove(photo);
                       }}
-                      className="absolute top-2 right-2 bg-midnight/80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Remove this photo"
+                      // Also reveal on keyboard focus; hover-only hid it from keyboard users.
+                      className="absolute top-2 right-2 bg-midnight/80 text-white p-1 rounded-full opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </>
                 ) : (
@@ -66,8 +69,8 @@ export const TheEssence: FC = () => {
                       <div className="p-4 bg-white/50 rounded-full mb-2 group-hover:scale-110 transition-transform">
                         <Plus className="w-6 h-6 text-midnight" />
                       </div>
-                      <span className="text-sm font-medium text-midnight/60">Upload Photo</span>
-                      <span className="mt-1 text-xs text-midnight/40">Choose from your device</span>
+                      <span className="text-sm font-medium text-midnight/80">Upload Photo</span>
+                      <span className="mt-1 text-xs text-midnight/80">Choose from your device</span>
                       <input
                         type="file"
                         className="hidden"

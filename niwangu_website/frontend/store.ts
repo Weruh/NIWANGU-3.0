@@ -1,29 +1,31 @@
 import { create } from 'zustand';
 import {
   closeMatch,
-  choosePricingPlan as choosePricingPlanRequest,
+  finalizeProfileReadiness,
   getMyProfile,
   getMyRitualAnswers,
+  getPaymentState,
   getProfileViewStatus,
   getSession,
   handleSwipe,
   listGalleryProfiles,
   listMatches,
   listProfilePhotos,
+  markMatchRead,
   onAuthStateChange,
   saveRitualAnswer,
   sendMatchMessage,
   signInWithEmail,
   signOut as signOutRequest,
   signUpWithEmail,
-  unlockPremium as unlockPremiumRequest,
-  requestStkPush,
+  requestMpesaCharge,
   updateMyProfile,
   uploadProfilePhoto,
   deleteProfilePhoto,
 } from './lib/api';
+import { fetchPricingPlans } from './lib/plans';
 import { isSupabaseConfigured } from './lib/supabase';
-import { CurrentUserProfile, Gender, PricingPlan, ProfilePhoto, ProfileUpdateInput, SignUpInput, SwipeDirection, UserProfile, ViewState, ChatSession } from './types';
+import { CurrentUserProfile, Gender, PaidPricingPlan, PricingPlanOption, ProfilePhoto, ProfileUpdateInput, SignUpInput, SwipeDirection, UserProfile, ViewState, ChatSession } from './types';
 
 const resolveAuthenticatedView = (
   profile: CurrentUserProfile,
@@ -57,6 +59,11 @@ interface SanctuaryStore {
   paymentAmountKsh: number;
   profileViewLockUntil: string | null;
   isPremium: boolean;
+  /** Whether a gallery fetch has completed at least once, successfully or not. */
+  galleryLoaded: boolean;
+  plans: PricingPlanOption[];
+  plansLoading: boolean;
+  paymentPending: boolean;
   userLocation: string;
   userGender: Gender | '';
   currentProfile: CurrentUserProfile | null;
@@ -84,11 +91,13 @@ interface SanctuaryStore {
   uploadPhoto: (file: File, sortOrder: number) => Promise<void>;
   removePhoto: (photo: ProfilePhoto) => Promise<void>;
   completePhotoStep: () => Promise<void>;
-  choosePricingPlan: (plan: PricingPlan) => Promise<void>;
+  continueWithFreePlan: () => Promise<void>;
+  loadPricingPlans: () => Promise<void>;
   loadGallery: () => Promise<void>;
   swipeProfile: (targetProfileId: string, direction: SwipeDirection) => Promise<{ matched: boolean }>;
-  unlockPremium: (planId?: PricingPlan, phoneNumber?: string) => Promise<void>;
+  startPremiumPayment: (planId: PaidPricingPlan, phoneNumber: string) => Promise<void>;
   loadChats: () => Promise<void>;
+  markChatRead: (chatId: string) => Promise<void>;
   sendMessage: (chatId: string, text: string) => Promise<void>;
   closeConnection: (chatId: string, reason: string) => Promise<void>;
 }
@@ -109,6 +118,8 @@ const resetUnauthedState = (): Pick<
   | 'paymentAmountKsh'
   | 'profileViewLockUntil'
   | 'isPremium'
+  | 'galleryLoaded'
+  | 'paymentPending'
   | 'userLocation'
   | 'userGender'
 > => ({
@@ -121,12 +132,25 @@ const resetUnauthedState = (): Pick<
   dailyProfileViews: 5,
   profileViewsUsed: 0,
   paymentRequired: false,
-  paymentAmountKsh: 2000,
+  paymentAmountKsh: 99,
   profileViewLockUntil: null,
   isPremium: false,
+  galleryLoaded: false,
+  paymentPending: false,
   userLocation: '',
   userGender: '',
 });
+
+// Module-level so a second payment attempt cancels the first poller rather than
+// racing it, and so signing out stops the polling.
+let paymentPollTimer: ReturnType<typeof setTimeout> | null = null;
+
+const stopPaymentPolling = () => {
+  if (paymentPollTimer) {
+    clearTimeout(paymentPollTimer);
+    paymentPollTimer = null;
+  }
+};
 
 export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
   view: 'home',
@@ -138,9 +162,13 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
   dailyProfileViews: 5,
   profileViewsUsed: 0,
   paymentRequired: false,
-  paymentAmountKsh: 2000,
+  paymentAmountKsh: 99,
   profileViewLockUntil: null,
   isPremium: false,
+  galleryLoaded: false,
+  plans: [],
+  plansLoading: false,
+  paymentPending: false,
   userLocation: '',
   userGender: '',
   currentProfile: null,
@@ -252,6 +280,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       if (session) {
         void get().bootstrapAuthenticatedState();
       } else {
+        stopPaymentPolling();
         set({
           ...resetUnauthedState(),
           view: 'home',
@@ -320,6 +349,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
 
   signOut: async () => {
     set({ isBusy: true, errorMessage: '', infoMessage: '' });
+    stopPaymentPolling();
 
     try {
       await signOutRequest();
@@ -503,7 +533,24 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     }
   },
 
-  choosePricingPlan: async (plan) => {
+  loadPricingPlans: async () => {
+    if (get().plansLoading || get().plans.length > 0) {
+      return;
+    }
+
+    set({ plansLoading: true });
+
+    try {
+      set({ plans: await fetchPricingPlans(), plansLoading: false });
+    } catch (error) {
+      set({
+        plansLoading: false,
+        errorMessage: error instanceof Error ? error.message : 'Unable to load pricing plans.',
+      });
+    }
+  },
+
+  continueWithFreePlan: async () => {
     const profile = get().currentProfile;
 
     if (!profile) {
@@ -514,10 +561,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     set({ isBusy: true, errorMessage: '' });
 
     try {
-      await choosePricingPlanRequest(profile.id, plan);
-      if (plan === 'premium') {
-        await unlockPremiumRequest();
-      }
+      await finalizeProfileReadiness(profile.id);
 
       const refreshedProfile = await getMyProfile();
       const profileViewStatus = await getProfileViewStatus();
@@ -554,6 +598,9 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       const { profiles, status } = await listGalleryProfiles();
       set({
         galleryProfiles: profiles,
+        // Marks the attempt as done even when it returns nobody, so an empty
+        // gallery shows its own screen instead of retrying forever.
+        galleryLoaded: true,
         galleryLoading: false,
         profileViewsUsed: status.usedViews,
         paymentRequired: status.isLocked && !get().isPremium,
@@ -562,6 +609,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       });
     } catch (error) {
       set({
+        galleryLoaded: true,
         galleryLoading: false,
         errorMessage: error instanceof Error ? error.message : 'Unable to load the gallery.',
       });
@@ -614,7 +662,12 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     }
   },
 
-  unlockPremium: async (planId = '30_days', phoneNumber) => {
+  /**
+   * Sends the STK prompt via Paystack, then waits for the Paystack webhook to
+   * activate the subscription server-side. Nothing here grants premium: the
+   * client only reads back what the webhook wrote.
+   */
+  startPremiumPayment: async (planId, phoneNumber) => {
     const profile = get().currentProfile;
 
     if (!profile) {
@@ -622,46 +675,94 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       return;
     }
 
-    set({ isBusy: true, errorMessage: '' });
+    stopPaymentPolling();
+    set({ isBusy: true, paymentPending: false, errorMessage: '', infoMessage: '' });
+
+    let reference: string;
+    let promptMessage: string;
 
     try {
-      if (phoneNumber) {
-        const amountMap: Record<string, number> = {
-          '7_days': 99,
-          '30_days': 199,
-          '90_days': 499,
-          '180_days': 999,
-          '365_days': 1799,
-        };
-        const amount = amountMap[planId] || 199;
-        await requestStkPush(phoneNumber, planId, amount, profile.id);
+      ({ reference, message: promptMessage } = await requestMpesaCharge(planId, phoneNumber));
+    } catch (error) {
+      set({
+        isBusy: false,
+        errorMessage: error instanceof Error ? error.message : 'Unable to start M-Pesa payment.',
+      });
+      throw error;
+    }
+
+    set({
+      isBusy: false,
+      paymentPending: true,
+      // Paystack returns its own prompt copy; fall back when it sends none.
+      infoMessage: promptMessage ||
+        'STK push sent. Enter your M-Pesa PIN on your phone to unlock premium access.',
+    });
+
+    // The prompt expires after about a minute; keep checking a little past that
+    // so a slow confirmation still lands without leaving the poll running.
+    const deadline = Date.now() + 120_000;
+
+    const finish = async (settled: 'completed' | 'failed' | 'amount_mismatch') => {
+      stopPaymentPolling();
+
+      if (settled !== 'completed') {
         set({
-          infoMessage: 'STK push sent. Complete the payment in M-Pesa to unlock premium access.',
-          isBusy: false,
+          paymentPending: false,
+          infoMessage: '',
+          errorMessage: settled === 'amount_mismatch'
+            ? 'The amount received did not match the plan price. Contact support with your M-Pesa code.'
+            : 'The M-Pesa payment was not completed. You can try again.',
         });
         return;
       }
 
-      await unlockPremiumRequest(planId);
+      const [refreshedProfile, profileViewStatus] = await Promise.all([
+        getMyProfile(),
+        getProfileViewStatus(),
+      ]);
 
-      const refreshedProfile = await getMyProfile();
       set({
         currentProfile: refreshedProfile,
-        isPremium: true,
+        isPremium: Boolean(refreshedProfile?.isPremium),
         dailyProfileViews: refreshedProfile?.dailySwipeLimit ?? 5,
+        profileViewsUsed: profileViewStatus.usedViews,
         paymentRequired: false,
         profileViewLockUntil: null,
-        isBusy: false,
+        paymentPending: false,
+        infoMessage: 'Payment confirmed. Premium access is now active.',
       });
 
       await get().loadGallery();
-    } catch (error) {
-      set({
-        isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to unlock premium.',
-      });
-      throw error;
-    }
+    };
+
+    const poll = async () => {
+      try {
+        const state = await getPaymentState(reference);
+
+        if (state === 'completed' || state === 'failed' || state === 'amount_mismatch') {
+          await finish(state);
+          return;
+        }
+      } catch (error) {
+        // A transient read failure should not abandon a payment in flight.
+        console.error('Payment status check failed:', error);
+      }
+
+      if (Date.now() >= deadline) {
+        stopPaymentPolling();
+        set({
+          paymentPending: false,
+          infoMessage:
+            'Still waiting for M-Pesa to confirm. If you completed the payment, reopen the app in a moment.',
+        });
+        return;
+      }
+
+      paymentPollTimer = setTimeout(() => void poll(), 3000);
+    };
+
+    paymentPollTimer = setTimeout(() => void poll(), 3000);
   },
 
   loadChats: async () => {
@@ -690,6 +791,29 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     }
   },
 
+  markChatRead: async (chatId) => {
+    const chat = get().activeChats.find((item) => item.id === chatId);
+
+    if (!chat || chat.unreadCount === 0) {
+      return;
+    }
+
+    // Clear the badge immediately; the count is recomputed on the next load.
+    set({
+      activeChats: get().activeChats.map((item) =>
+        item.id === chatId ? { ...item, unreadCount: 0 } : item,
+      ),
+    });
+
+    try {
+      await markMatchRead(chatId);
+    } catch (error) {
+      console.error('Unable to mark conversation as read:', error);
+    }
+  },
+
+  // Rethrows so the composer can keep the text and mark the bubble failed.
+  // Swallowing the error here used to clear the input and lose the message.
   sendMessage: async (chatId, text) => {
     try {
       await sendMatchMessage(chatId, text);
@@ -698,6 +822,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({
         errorMessage: error instanceof Error ? error.message : 'Unable to send your message.',
       });
+      throw error;
     }
   },
 

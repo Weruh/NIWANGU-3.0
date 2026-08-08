@@ -1,9 +1,14 @@
 project_id = "niwangu"
 
-[functions.stk-push]
+# Only signed-in members may start a payment. The function additionally resolves
+# the caller's profile from the token rather than the request body.
+[functions.paystack-charge]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 
-[functions.mpesa-callback]
+# Paystack cannot send a JWT. This one authenticates with the HMAC SHA-512
+# signature in x-paystack-signature and verifies the transaction against
+# Paystack's API instead.
+[functions.paystack-webhook]
 enabled = true
 verify_jwt = false

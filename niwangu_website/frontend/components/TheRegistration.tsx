@@ -63,21 +63,21 @@ export const TheRegistration: FC = () => {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="min-h-screen bg-sandstone flex flex-col p-6"
+      className="min-h-dvh bg-sandstone flex flex-col p-6"
     >
       <button
         onClick={() => {
           clearMessages();
           setView('home');
         }}
-        className="self-start p-2 text-midnight/60 hover:text-midnight transition-colors"
+        className="self-start p-2 text-midnight/80 hover:text-midnight transition-colors"
       >
         <ArrowLeft className="w-6 h-6" />
       </button>
 
       <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
         <h2 className="font-serif text-4xl text-midnight mb-2">Begin Journey</h2>
-        <p className="text-midnight/70 mb-10 font-light">Create your sanctuary profile with Supabase Auth.</p>
+        <p className="text-midnight/80 mb-10 font-light">Create your sanctuary profile with Supabase Auth.</p>
 
         <motion.form
           onSubmit={(event) => {
