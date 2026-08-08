@@ -11,7 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
-import { ArrowLeft, Send, Sprout, Flower, XCircle, RotateCw } from 'lucide-react';
+import { ArrowLeft, Send, Sprout, Flower, XCircle, RotateCw, ShieldCheck } from 'lucide-react';
 import { ChatSession, Message } from '../types';
 import {
   MESSAGE_PAGE_SIZE,
@@ -92,6 +92,7 @@ export const TheParlor: FC = () => {
     markChatRead,
     sendMessage,
     closeConnection,
+    acknowledgeBoundaryFor,
     setView,
   } = useSanctuaryStore(useShallow((state) => ({
     activeChats: state.activeChats,
@@ -103,6 +104,7 @@ export const TheParlor: FC = () => {
     markChatRead: state.markChatRead,
     sendMessage: state.sendMessage,
     closeConnection: state.closeConnection,
+    acknowledgeBoundaryFor: state.acknowledgeBoundaryFor,
     setView: state.setView,
   })));
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -167,6 +169,7 @@ export const TheParlor: FC = () => {
             onBack={() => setSelectedChatId(null)}
             onSend={(text) => sendMessage(selectedChat.id, text)}
             onClose={(reason) => closeConnection(selectedChat.id, reason)}
+            onAcknowledgeBoundary={() => acknowledgeBoundaryFor(selectedChat.id)}
             onRead={handleRead}
           />
         ) : (
@@ -303,9 +306,11 @@ const ChatWindow: FC<{
   onBack: () => void;
   onSend: (text: string) => Promise<void>;
   onClose: (reason: string) => Promise<void>;
+  onAcknowledgeBoundary: () => Promise<void>;
   onRead: () => void;
-}> = ({ chat, currentProfileId, onBack, onSend, onClose, onRead }) => {
+}> = ({ chat, currentProfileId, onBack, onSend, onClose, onAcknowledgeBoundary, onRead }) => {
   const [inputText, setInputText] = useState('');
+  const [acknowledging, setAcknowledging] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -689,7 +694,38 @@ const ChatWindow: FC<{
         <div ref={messagesEndRef} />
       </div>
 
-      {!chat.isClosed && (
+      {/* Their stated boundary has to be read before the first message. The
+          server enforces this too; this panel is what makes it feel intentional
+          rather than like an error. */}
+      {!chat.isClosed && chat.partnerBoundary && !chat.boundaryAcknowledged && (
+        <div className="border-t border-midnight/10 bg-sandstone p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto max-w-md">
+            <h3 className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-widest text-midnight/70">
+              <ShieldCheck className="h-3.5 w-3.5 text-sage" aria-hidden="true" />
+              {chat.partnerName}'s boundary
+            </h3>
+            <p className="mb-4 border-l-2 border-sage pl-4 font-serif text-lg italic leading-relaxed text-midnight">
+              "{chat.partnerBoundary}"
+            </p>
+            <p className="mb-4 text-sm text-midnight/80">
+              Read this before you write. Acknowledging it opens the conversation.
+            </p>
+            <button
+              type="button"
+              disabled={acknowledging}
+              onClick={() => {
+                setAcknowledging(true);
+                void onAcknowledgeBoundary().finally(() => setAcknowledging(false));
+              }}
+              className="w-full rounded-xl bg-midnight px-4 py-3 text-sm font-medium text-sandstone transition-colors hover:bg-midnight/90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight"
+            >
+              {acknowledging ? 'Recording...' : 'I have read this. Continue'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!chat.isClosed && (!chat.partnerBoundary || chat.boundaryAcknowledged) && (
         <form
           onSubmit={(event) => {
             void handleSend(event);

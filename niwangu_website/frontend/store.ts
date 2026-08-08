@@ -11,6 +11,7 @@ import {
   listGalleryProfiles,
   listMatches,
   listProfilePhotos,
+  acknowledgeBoundary,
   markMatchRead,
   onAuthStateChange,
   saveRitualAnswer,
@@ -98,6 +99,7 @@ interface SanctuaryStore {
   startPremiumPayment: (planId: PaidPricingPlan, phoneNumber: string) => Promise<void>;
   loadChats: () => Promise<void>;
   markChatRead: (chatId: string) => Promise<void>;
+  acknowledgeBoundaryFor: (chatId: string) => Promise<void>;
   sendMessage: (chatId: string, text: string) => Promise<void>;
   closeConnection: (chatId: string, reason: string) => Promise<void>;
 }
@@ -809,6 +811,24 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       await markMatchRead(chatId);
     } catch (error) {
       console.error('Unable to mark conversation as read:', error);
+    }
+  },
+
+  acknowledgeBoundaryFor: async (chatId) => {
+    try {
+      await acknowledgeBoundary(chatId);
+      // Unlock the composer immediately rather than waiting on a reload.
+      set({
+        activeChats: get().activeChats.map((item) =>
+          item.id === chatId ? { ...item, boundaryAcknowledged: true } : item,
+        ),
+      });
+    } catch (error) {
+      set({
+        errorMessage:
+          error instanceof Error ? error.message : 'Unable to record that acknowledgement.',
+      });
+      throw error;
     }
   },
 

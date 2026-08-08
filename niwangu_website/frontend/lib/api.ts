@@ -59,6 +59,7 @@ type GalleryRow = {
   intent: string;
   core_value: string;
   why_niwangu: string;
+  alignment_reasons: string[] | null;
   photo_url: string | null;
 };
 
@@ -73,6 +74,8 @@ type MatchRow = {
   last_message: string | null;
   last_message_at: string | null;
   unread_count: number | null;
+  partner_boundary: string | null;
+  boundary_acknowledged: boolean | null;
 };
 
 type SwipeRpcRow = {
@@ -143,6 +146,7 @@ const mapGalleryProfile = (row: GalleryRow): UserProfile => ({
     6: row.core_value,
     10: row.why_niwangu,
   },
+  alignmentReasons: row.alignment_reasons ?? [],
 });
 
 const mapChatSession = (row: MatchRow): ChatSession => ({
@@ -157,6 +161,10 @@ const mapChatSession = (row: MatchRow): ChatSession => ({
   lastMessage: row.last_message ?? '',
   lastMessageAt: row.last_message_at,
   unreadCount: row.unread_count ?? 0,
+  partnerBoundary: row.partner_boundary,
+  // Default to acknowledged so a transport hiccup can never wrongly gate the
+  // composer; the server rejects the send regardless if it truly isn't.
+  boundaryAcknowledged: row.boundary_acknowledged ?? true,
 });
 
 const mapProfileViewStatus = (row: ProfileViewStatusRow | null | undefined): ProfileViewStatus => ({
@@ -677,6 +685,20 @@ export const listMatchMessages = async (
 export const markMatchRead = async (matchId: string) => {
   const supabase = getSupabase();
   const { error } = await supabase.rpc('mark_match_read', { p_match_id: matchId });
+
+  if (error) {
+    throw error;
+  }
+};
+
+/**
+ * Records that you have read the partner's stated boundary. send_match_message
+ * rejects your first message until this has been called, so the acknowledgement
+ * is enforced server-side rather than by the UI alone.
+ */
+export const acknowledgeBoundary = async (matchId: string) => {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('acknowledge_boundary', { p_match_id: matchId });
 
   if (error) {
     throw error;

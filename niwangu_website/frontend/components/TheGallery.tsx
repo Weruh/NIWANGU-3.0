@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
-import { Heart, X } from 'lucide-react';
+import { Check, Heart, X } from 'lucide-react';
 import { ProfileMenu } from './ProfileMenu';
 import { OptimizedImage } from './OptimizedImage';
 import { optimizeImageUrl } from '../lib/images';
@@ -211,6 +211,27 @@ export const TheGallery: FC = () => {
                 <span className="w-2 h-2 rounded-full bg-sage" />
                 {currentProfile.distance}
               </p>
+
+              {/* The payoff for answering the Ritual: say plainly why this
+                  person was surfaced, instead of leaving it to chance. */}
+              {currentProfile.alignmentReasons.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-xs uppercase tracking-widest text-sageLight mb-3">
+                    Why you align
+                  </h3>
+                  <ul className="flex flex-wrap gap-2">
+                    {currentProfile.alignmentReasons.map((reason) => (
+                      <li
+                        key={reason}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-sage/40 bg-sage/10 px-3 py-1.5 text-xs font-medium text-sandstone backdrop-blur-sm"
+                      >
+                        <Check className="h-3.5 w-3.5 shrink-0 text-sageLight" aria-hidden="true" />
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="space-y-8 mb-12">
                 <div>
