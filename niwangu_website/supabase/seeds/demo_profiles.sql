@@ -31,6 +31,8 @@ declare
     'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=800'
   ];
   i integer;
+  v_q integer;
+  v_spoil integer[];
 begin
   select p.* into v_me
   from public.profiles p
@@ -65,8 +67,60 @@ begin
     insert into public.profile_photos (profile_id, public_url, sort_order, storage_path)
     values (v_new_id, v_photos[i], 0, null);
 
+    -- Ritual answers drive matching, so seed them or every demo member scores
+    -- neutral and the gallery shows no alignment reasons at all.
+    --
+    -- Start from a copy of your own answers, then spoil specific questions per
+    -- member so the spread is visible: 1-2 align closely, 3-4 partially, 5
+    -- barely, and 6 is filtered out entirely by the children gate.
+    insert into public.ritual_answers (profile_id, question_id, answer_text)
+    select v_new_id, ra.question_id, ra.answer_text
+    from public.ritual_answers ra
+    where ra.profile_id = v_me.id
+    on conflict (profile_id, question_id) do nothing;
+
+    if i in (3, 4) then
+      v_spoil := array[2, 9];
+    elsif i = 5 then
+      v_spoil := array[1, 2, 6, 8, 11];
+    else
+      v_spoil := array[]::integer[];
+    end if;
+
+    foreach v_q in array v_spoil loop
+      update public.ritual_answers target
+      set answer_text = coalesce(
+        (
+          select rac.answer_text
+          from public.ritual_answer_codes rac
+          where rac.question_id = v_q
+            and rac.answer_text <> target.answer_text
+          order by rac.answer_text
+          limit 1
+        ),
+        target.answer_text
+      )
+      where target.profile_id = v_new_id
+        and target.question_id = v_q;
+    end loop;
+
+    -- The last member takes the opposing answer on children, which
+    -- is_mutually_eligible() treats as irreconcilable. They should never appear
+    -- in the gallery; that is the hard gate working, not a missing profile.
+    if i = array_length(v_names, 1) then
+      update public.ritual_answers
+      set answer_text = case answer_text
+        when 'Yes, absolutely'            then 'No, my family is complete'
+        when 'No, my family is complete'  then 'Yes, absolutely'
+        else answer_text
+      end
+      where profile_id = v_new_id
+        and question_id = 5;
+    end if;
+
     -- Every second one already liked you, so liking back creates an instant
-    -- match and a conversation appears in the Parlor.
+    -- match and a conversation appears in the Parlor. These also demonstrate
+    -- the reciprocity boost: they are surfaced ahead of everyone else.
     if i % 2 = 0 then
       insert into public.swipes (actor_profile_id, target_profile_id, direction)
       values (v_new_id, v_me.id, 'like')
@@ -74,7 +128,11 @@ begin
     end if;
   end loop;
 
-  raise notice 'Seeded % demo members (gender %) for %.',
+  if not exists (select 1 from public.ritual_answers where profile_id = v_me.id) then
+    raise warning 'Your account has no Ritual answers, so every demo member scores neutral and no alignment reasons will show. Complete the Ritual in the app, then re-run this seed.';
+  end if;
+
+  raise notice 'Seeded % demo members (gender %) for %. One is deliberately excluded by the children gate.',
     array_length(v_names, 1), v_shows, coalesce(v_me.full_name, 'your account');
 end
 $$;
