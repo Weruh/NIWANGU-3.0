@@ -434,10 +434,9 @@ export const SanctuaryGate: FC = () => {
             </div>
           </div>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-sandstone/0 via-sandstone/70 to-white sm:h-32" />
       </section>
 
-      <section className="relative bg-white px-6 pb-28 pt-14 sm:px-10 sm:pt-16 lg:px-14" aria-labelledby="how-it-works">
+      <section className="relative bg-white px-6 pb-20 sm:pb-24 pt-14 sm:px-10 sm:pt-16 lg:px-14" aria-labelledby="how-it-works">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">How it works</p>
@@ -460,10 +459,9 @@ export const SanctuaryGate: FC = () => {
             })}
           </div>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-white/0 via-white/70 to-[#4a3b42] sm:h-32" />
       </section>
 
-      <section className="relative bg-[#4a3b42] px-6 pb-28 pt-20 text-white sm:px-10 lg:px-14" aria-labelledby="love-stories">
+      <section className="relative bg-[#4a3b42] px-6 pb-20 sm:pb-24 pt-20 text-white sm:px-10 lg:px-14" aria-labelledby="love-stories">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
@@ -521,10 +519,9 @@ export const SanctuaryGate: FC = () => {
             ))}
           </div>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-[#4a3b42]/0 via-[#4a3b42]/70 to-[#f7c4d0] sm:h-32" />
       </section>
 
-      <section className="relative bg-[#f7c4d0] px-6 pb-28 pt-20 sm:px-10 lg:px-14" aria-labelledby="final-cta">
+      <section className="relative bg-[#f7c4d0] px-6 pb-20 sm:pb-24 pt-20 sm:px-10 lg:px-14" aria-labelledby="final-cta">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
             <Sparkles className="mb-5 h-9 w-9 text-midnight" aria-hidden="true" />
@@ -545,7 +542,6 @@ export const SanctuaryGate: FC = () => {
             Join Niwangu
           </Button>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-b from-[#f7c4d0]/0 via-[#f7c4d0]/70 to-white sm:h-32" />
       </section>
 
       <footer className="bg-white px-6 pb-10 pt-12 text-midnight sm:px-10 lg:px-14">
