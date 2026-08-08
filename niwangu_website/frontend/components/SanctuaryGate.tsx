@@ -382,28 +382,33 @@ export const SanctuaryGate: FC = () => {
 
         <div className="relative flex items-center bg-sandstone px-6 py-12 sm:px-10 lg:px-16">
           <div className="mx-auto w-full max-w-[560px]">
-            <div className="mb-12 flex items-center gap-5">
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-white text-sageDeep shadow-xl shadow-sage/15 ring-1 ring-sage/10">
-                <NiwanguLogo className="h-11 w-11" />
+            <div className="mb-10 flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white text-sageDeep shadow-lg shadow-sage/15 ring-1 ring-sage/10">
+                <NiwanguLogo className="h-10 w-10" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sageDeep sm:text-sm">Niwangu</p>
-                <p className="mt-1 font-serif text-2xl leading-none text-midnight sm:text-3xl">Love, with Intention.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sageDeep">Niwangu</p>
+                <p className="mt-1.5 text-xl font-medium leading-none tracking-tight text-midnight sm:text-2xl">
+                  Love, with Intention.
+                </p>
               </div>
             </div>
 
-            <h1 className="max-w-[520px] font-serif text-5xl leading-[0.98] text-midnight sm:text-6xl xl:text-[5.35rem]">
+            <h1 className="max-w-[520px] text-5xl font-semibold leading-[1.05] tracking-tight text-midnight sm:text-6xl xl:text-7xl">
               Find your intentional love story.
             </h1>
-            <p className="mt-7 max-w-[500px] text-lg leading-8 text-midnight/80 sm:text-xl sm:leading-9">
+            <p className="mt-6 max-w-[480px] text-lg leading-8 text-midnight/80">
               Meet people who value depth, emotional clarity, and a gentler path toward real connection.
             </p>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            {/* Two equal columns with both buttons full width, so the pair reads
+                as one control rather than a wide primary and a small secondary. */}
+            <div className="mt-8 grid max-w-[480px] gap-3 sm:grid-cols-2">
               <Button
                 variant="primary"
+                fullWidth
                 onClick={() => setView('register')}
-                className="min-h-[58px] px-8 text-base shadow-xl shadow-sage/25 sm:min-w-[230px]"
+                className="min-h-[54px] text-base shadow-lg shadow-sage/20"
                 data-analytics-id="homepage-join-primary"
               >
                 <Heart className="h-5 w-5" aria-hidden="true" />
@@ -411,8 +416,9 @@ export const SanctuaryGate: FC = () => {
               </Button>
               <Button
                 variant="outline"
+                fullWidth
                 onClick={() => setView('auth')}
-                className="min-h-[58px] border-sage/40 bg-white/60 px-8 text-base hover:border-midnight sm:min-w-[170px]"
+                className="min-h-[54px] border-sage/40 bg-white/60 text-base hover:border-midnight"
                 data-analytics-id="homepage-login"
               >
                 <LockKeyhole className="h-5 w-5" aria-hidden="true" />
@@ -420,19 +426,19 @@ export const SanctuaryGate: FC = () => {
               </Button>
             </div>
 
-            <p className="mt-6 text-sm font-medium text-midnight/70">A space for slow, meaningful connection.</p>
+            <p className="mt-5 text-sm text-midnight/70">A space for slow, meaningful connection.</p>
 
-            <div className="mt-12 grid grid-cols-3 gap-4 border-y border-midnight/10 py-6 text-sm text-midnight/80">
+            <div className="mt-10 grid max-w-[480px] grid-cols-3 gap-4 border-t border-midnight/10 pt-6 text-sm text-midnight/80">
               <div>
-                <strong className="block font-serif text-3xl leading-none text-midnight">3</strong>
+                <strong className="block text-3xl font-semibold leading-none tracking-tight text-midnight">3</strong>
                 <span className="mt-2 block">thoughtful steps</span>
               </div>
               <div>
-                <strong className="block font-serif text-3xl leading-none text-midnight">5</strong>
+                <strong className="block text-3xl font-semibold leading-none tracking-tight text-midnight">5</strong>
                 <span className="mt-2 block">daily intentions</span>
               </div>
               <div>
-                <strong className="block font-serif text-3xl leading-none text-midnight">1</strong>
+                <strong className="block text-3xl font-semibold leading-none tracking-tight text-midnight">1</strong>
                 <span className="mt-2 block">calmer way</span>
               </div>
             </div>
