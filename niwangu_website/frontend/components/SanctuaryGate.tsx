@@ -440,8 +440,11 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <section className="relative bg-white px-6 pb-24 pt-20 sm:px-10 sm:pb-28 sm:pt-24 lg:px-14" aria-labelledby="how-it-works">
-        <div className="mx-auto max-w-7xl">
+      {/* Sections hold a minimum height and centre their content, so each one
+          reads as a full band rather than a thin strip. Content taller than the
+          minimum still grows normally. */}
+      <section className="relative flex min-h-[85vh] items-center bg-white px-6 py-24 sm:px-10 sm:py-28 lg:px-14" aria-labelledby="how-it-works">
+        <div className="mx-auto w-full max-w-7xl">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">How it works</p>
             <h2 id="how-it-works" className="mt-4 font-serif text-4xl text-midnight sm:text-5xl">
@@ -452,20 +455,15 @@ export const SanctuaryGate: FC = () => {
             {steps.map((step) => {
               const Icon = step.icon;
               return (
-                // Taller cards with the icon pinned top and the copy pinned
-                // bottom. mt-auto absorbs the extra height, so cards whose
-                // description runs short do not leave a gap under the text.
                 <article
                   key={step.title}
-                  className="flex min-h-[19rem] flex-col rounded-lg border border-midnight/10 bg-sandstone/70 p-7 sm:min-h-[21rem] lg:min-h-[23rem] lg:p-8"
+                  className="rounded-lg border border-midnight/10 bg-sandstone/70 p-7 lg:p-8"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sageDeep shadow-sm">
+                  <div className="mb-9 flex h-12 w-12 items-center justify-center rounded-full bg-white text-sageDeep shadow-sm">
                     <Icon className="h-6 w-6" aria-hidden="true" />
                   </div>
-                  <div className="mt-auto pt-10">
-                    <h3 className="font-serif text-2xl leading-snug text-midnight">{step.title}</h3>
-                    <p className="mt-4 leading-7 text-midnight/80">{step.description}</p>
-                  </div>
+                  <h3 className="font-serif text-2xl leading-snug text-midnight">{step.title}</h3>
+                  <p className="mt-4 leading-7 text-midnight/80">{step.description}</p>
                 </article>
               );
             })}
@@ -473,8 +471,8 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <section className="relative bg-[#4a3b42] px-6 pb-24 pt-24 text-white sm:px-10 sm:pb-28 lg:px-14" aria-labelledby="love-stories">
-        <div className="mx-auto max-w-7xl">
+      <section className="relative flex min-h-[85vh] items-center bg-[#4a3b42] px-6 py-24 text-white sm:px-10 sm:py-28 lg:px-14" aria-labelledby="love-stories">
+        <div className="mx-auto w-full max-w-7xl">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageLight">Real love stories</p>
@@ -533,8 +531,9 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <section className="relative bg-[#f7c4d0] px-6 pb-24 pt-24 sm:px-10 sm:pb-28 lg:px-14" aria-labelledby="final-cta">
-        <div className="mx-auto flex max-w-7xl flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
+      {/* Shorter minimum: this one is a single banner, not a content block. */}
+      <section className="relative flex min-h-[60vh] items-center bg-[#f7c4d0] px-6 py-24 sm:px-10 sm:py-28 lg:px-14" aria-labelledby="final-cta">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
             <Sparkles className="mb-5 h-9 w-9 text-midnight" aria-hidden="true" />
             <h2 id="final-cta" className="font-serif text-4xl text-midnight sm:text-5xl">
