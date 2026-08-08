@@ -308,7 +308,7 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
     exit={{ opacity: 0 }}
     className="min-h-dvh bg-sandstone text-midnight"
   >
-    <header className="border-b border-midnight/10 bg-white/70 px-6 py-5 backdrop-blur sm:px-10 lg:px-14 xl:px-20">
+    <header className="border-b border-midnight/10 bg-white/70 px-6 py-5 backdrop-blur sm:px-10 lg:px-14">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6">
         <a href="/" className="flex items-center gap-3 text-sageDeep" aria-label="Return to Niwangu homepage">
           <NiwanguLogo className="h-10 w-10" />
@@ -380,7 +380,7 @@ export const SanctuaryGate: FC = () => {
           <HeroGallery />
         </div>
 
-        <div className="relative flex items-center bg-sandstone px-6 py-12 sm:px-10 lg:px-16 xl:px-20">
+        <div className="relative flex items-center bg-sandstone px-6 py-12 sm:px-10 lg:px-16">
           <div className="mx-auto w-full max-w-[560px]">
             <div className="mb-12 flex items-center gap-5">
               <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-white text-sageDeep shadow-xl shadow-sage/15 ring-1 ring-sage/10">
@@ -440,8 +440,8 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <section className="relative bg-white px-6 pb-24 pt-20 sm:px-10 sm:pb-28 sm:pt-24 lg:px-14 xl:px-20" aria-labelledby="how-it-works">
-        <div className="mx-auto max-w-screen-2xl">
+      <section className="relative bg-white px-6 pb-24 pt-20 sm:px-10 sm:pb-28 sm:pt-24 lg:px-14" aria-labelledby="how-it-works">
+        <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">How it works</p>
             <h2 id="how-it-works" className="mt-4 font-serif text-4xl text-midnight sm:text-5xl">
@@ -452,15 +452,20 @@ export const SanctuaryGate: FC = () => {
             {steps.map((step) => {
               const Icon = step.icon;
               return (
+                // Taller cards with the icon pinned top and the copy pinned
+                // bottom. mt-auto absorbs the extra height, so cards whose
+                // description runs short do not leave a gap under the text.
                 <article
                   key={step.title}
-                  className="rounded-lg border border-midnight/10 bg-sandstone/70 p-7 lg:p-8"
+                  className="flex min-h-[19rem] flex-col rounded-lg border border-midnight/10 bg-sandstone/70 p-7 sm:min-h-[21rem] lg:min-h-[23rem] lg:p-8"
                 >
-                  <div className="mb-9 flex h-12 w-12 items-center justify-center rounded-full bg-white text-sageDeep shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-sageDeep shadow-sm">
                     <Icon className="h-6 w-6" aria-hidden="true" />
                   </div>
-                  <h3 className="font-serif text-2xl leading-snug text-midnight">{step.title}</h3>
-                  <p className="mt-4 leading-7 text-midnight/80">{step.description}</p>
+                  <div className="mt-auto pt-10">
+                    <h3 className="font-serif text-2xl leading-snug text-midnight">{step.title}</h3>
+                    <p className="mt-4 leading-7 text-midnight/80">{step.description}</p>
+                  </div>
                 </article>
               );
             })}
@@ -468,8 +473,8 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <section className="relative bg-[#4a3b42] px-6 pb-24 pt-24 text-white sm:px-10 sm:pb-28 lg:px-14 xl:px-20" aria-labelledby="love-stories">
-        <div className="mx-auto max-w-screen-2xl">
+      <section className="relative bg-[#4a3b42] px-6 pb-24 pt-24 text-white sm:px-10 sm:pb-28 lg:px-14" aria-labelledby="love-stories">
+        <div className="mx-auto max-w-7xl">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageLight">Real love stories</p>
@@ -528,8 +533,8 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <section className="relative bg-[#f7c4d0] px-6 pb-24 pt-24 sm:px-10 sm:pb-28 lg:px-14 xl:px-20" aria-labelledby="final-cta">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
+      <section className="relative bg-[#f7c4d0] px-6 pb-24 pt-24 sm:px-10 sm:pb-28 lg:px-14" aria-labelledby="final-cta">
+        <div className="mx-auto flex max-w-7xl flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
             <Sparkles className="mb-5 h-9 w-9 text-midnight" aria-hidden="true" />
             <h2 id="final-cta" className="font-serif text-4xl text-midnight sm:text-5xl">
@@ -551,8 +556,8 @@ export const SanctuaryGate: FC = () => {
         </div>
       </section>
 
-      <footer className="bg-white px-6 pb-10 pt-12 text-midnight sm:px-10 lg:px-14 xl:px-20">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
+      <footer className="bg-white px-6 pb-10 pt-12 text-midnight sm:px-10 lg:px-14">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-3 text-sageDeep">
               <NiwanguLogo className="h-10 w-10" />
