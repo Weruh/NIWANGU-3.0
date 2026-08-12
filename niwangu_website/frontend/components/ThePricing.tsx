@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FC, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -52,6 +52,7 @@ export const ThePricing: FC = () => {
     useState<PricingPlanOption | null>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void loadPricingPlans();
@@ -355,6 +356,7 @@ export const ThePricing: FC = () => {
             <Modal
               titleId="mpesa-checkout-title"
               closeLabel="Cancel this payment"
+              initialFocusRef={phoneInputRef}
               className="max-w-md border border-midnight/20 p-6 text-midnight"
               onClose={() => {
                 setSelectedCheckoutPlan(null);
@@ -402,6 +404,7 @@ export const ThePricing: FC = () => {
                       />
                       <input
                         id="mpesa-phone"
+                        ref={phoneInputRef}
                         type="tel"
                         inputMode="tel"
                         autoComplete="tel"
