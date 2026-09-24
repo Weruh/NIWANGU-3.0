@@ -2,6 +2,9 @@ export type ViewState = 'home' | 'auth' | 'register' | 'ritual' | 'essence' | 'p
 export type Gender = 'female' | 'male';
 export type PricingPlan = 'free' | '7_days' | '30_days' | '90_days' | '180_days' | '365_days';
 export type PaidPricingPlan = Exclude<PricingPlan, 'free'>;
+export type BoostSkuId = 'boost_pack_2';
+/** Anything requestMpesaCharge can be asked to charge for: a subscription plan or a boost pack. */
+export type PurchasableSkuId = PaidPricingPlan | BoostSkuId;
 export type SwipeDirection = 'like' | 'pass';
 export type PaymentState = 'pending' | 'completed' | 'failed' | 'amount_mismatch';
 
@@ -54,6 +57,17 @@ export interface CurrentUserProfile {
   isPremium: boolean;
   premiumExpiresAt: string | null;
   dailySwipeLimit: number;
+  boostCredits: number;
+  /** Timestamp may be in the past — that means no boost is active, not null. */
+  boostActiveUntil: string | null;
+}
+
+/** A purchasable boost pack: price/credit count from the database, copy is local. */
+export interface BoostPackOption {
+  id: BoostSkuId;
+  label: string;
+  priceKsh: number;
+  boostCredits: number;
 }
 
 export interface ProfileViewStatus {

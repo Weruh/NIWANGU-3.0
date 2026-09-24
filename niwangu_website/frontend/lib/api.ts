@@ -5,8 +5,11 @@ import {
   Gender,
   MatchMessageRow,
   Message,
+  BoostPackOption,
+  BoostSkuId,
   PaidPricingPlan,
   PaymentState,
+  PurchasableSkuId,
   ProfileViewStatus,
   ProfilePhoto,
   ProfileUpdateInput,
@@ -35,6 +38,8 @@ type ProfileRow = {
   is_premium: boolean | null;
   premium_expires_at: string | null;
   daily_swipe_limit: number | null;
+  boost_credits: number | null;
+  boost_active_until: string | null;
 };
 
 type PhotoRow = {
@@ -124,6 +129,8 @@ const mapProfile = (row: ProfileRow): CurrentUserProfile => ({
   isPremium: hasActivePremium(row),
   premiumExpiresAt: row.premium_expires_at,
   dailySwipeLimit: row.daily_swipe_limit ?? 5,
+  boostCredits: row.boost_credits ?? 0,
+  boostActiveUntil: row.boost_active_until,
 });
 
 const mapPhoto = (row: PhotoRow): ProfilePhoto => ({
@@ -259,7 +266,7 @@ export const getMyProfile = async (): Promise<CurrentUserProfile | null> => {
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'id, auth_user_id, full_name, age, gender, seeking_gender, location, intent, core_value, why_niwangu, boundary, onboarding_completed, profile_ready, is_premium, premium_expires_at, daily_swipe_limit',
+      'id, auth_user_id, full_name, age, gender, seeking_gender, location, intent, core_value, why_niwangu, boundary, onboarding_completed, profile_ready, is_premium, premium_expires_at, daily_swipe_limit, boost_credits, boost_active_until',
     )
     .eq('auth_user_id', user.id)
     .single();
@@ -563,7 +570,7 @@ export const handleSwipe = async (
  * edge function.
  */
 export const requestMpesaCharge = async (
-  planId: PaidPricingPlan,
+  planId: PurchasableSkuId,
   phoneNumber: string,
 ): Promise<MpesaChargeResult> => {
   const supabase = getSupabase();
@@ -629,6 +636,60 @@ export const getPaymentState = async (reference: string): Promise<PaymentState |
   }
 
   return (data?.status as PaymentState | undefined) ?? null;
+};
+
+type BoostPackRow = {
+  plan_id: string;
+  label: string;
+  price_ksh: number;
+  boost_credits: number | null;
+};
+
+/**
+ * The boost SKU lives in pricing_plans alongside subscription plans, but
+ * fetchPricingPlans() in lib/plans.ts filters rows through the
+ * PaidPricingPlan-keyed presentation map and would silently drop it — so this
+ * reads the row directly instead of going through that path.
+ */
+export const fetchBoostPack = async (): Promise<BoostPackOption | null> => {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('pricing_plans')
+    .select('plan_id, label, price_ksh, boost_credits')
+    .eq('plan_id', 'boost_pack_2')
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const row = data as BoostPackRow;
+
+  return {
+    id: row.plan_id as BoostSkuId,
+    label: row.label,
+    priceKsh: row.price_ksh,
+    boostCredits: row.boost_credits ?? 0,
+  };
+};
+
+export type ActivateBoostOutcome = 'activated' | 'already_active' | 'no_credits';
+
+/** Redeems one purchased boost credit for 30 minutes of active boost. */
+export const activateBoostCredit = async (): Promise<ActivateBoostOutcome> => {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc('activate_boost');
+
+  if (error) {
+    throw error;
+  }
+
+  return data as ActivateBoostOutcome;
 };
 
 export const listMatches = async () => {

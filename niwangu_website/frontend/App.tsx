@@ -3,6 +3,7 @@ import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from './store';
 
+const BoostPromoModal = lazy(() => import('./components/BoostPromoModal').then((module) => ({ default: module.BoostPromoModal })));
 const SanctuaryGate = lazy(() => import('./components/SanctuaryGate').then((module) => ({ default: module.SanctuaryGate })));
 const TheKeys = lazy(() => import('./components/TheKeys').then((module) => ({ default: module.TheKeys })));
 const TheRegistration = lazy(() => import('./components/TheRegistration').then((module) => ({ default: module.TheRegistration })));
@@ -30,6 +31,7 @@ export default function App() {
     backendConfigured,
     errorMessage,
     infoMessage,
+    showBoostPromo,
     initializeApp,
     listenForAuthChanges,
   } = useSanctuaryStore(useShallow((state) => ({
@@ -38,6 +40,7 @@ export default function App() {
     backendConfigured: state.backendConfigured,
     errorMessage: state.errorMessage,
     infoMessage: state.infoMessage,
+    showBoostPromo: state.showBoostPromo,
     initializeApp: state.initializeApp,
     listenForAuthChanges: state.listenForAuthChanges,
   })));
@@ -88,6 +91,14 @@ export default function App() {
           {view === 'gallery' && <TheGallery key="gallery" />}
           {view === 'parlor' && <TheParlor key="parlor" />}
           {view === 'profile' && <TheProfile key="profile" />}
+        </AnimatePresence>
+      </Suspense>
+
+      {/* Independent of the view switch above so it can appear over gallery,
+          parlor, or profile alike, and survives view changes while open. */}
+      <Suspense fallback={null}>
+        <AnimatePresence>
+          {showBoostPromo && <BoostPromoModal key="boost-promo" />}
         </AnimatePresence>
       </Suspense>
     </MotionConfig>

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import {
+  activateBoostCredit,
   closeMatch,
+  fetchBoostPack,
   finalizeProfileReadiness,
   getMyProfile,
   getMyRitualAnswers,
@@ -26,7 +28,7 @@ import {
 } from './lib/api';
 import { fetchPricingPlans } from './lib/plans';
 import { isSupabaseConfigured } from './lib/supabase';
-import { CurrentUserProfile, Gender, PaidPricingPlan, PricingPlanOption, ProfilePhoto, ProfileUpdateInput, SignUpInput, SwipeDirection, UserProfile, ViewState, ChatSession } from './types';
+import { BoostPackOption, CurrentUserProfile, Gender, PaidPricingPlan, PricingPlanOption, ProfilePhoto, ProfileUpdateInput, PurchasableSkuId, SignUpInput, SwipeDirection, UserProfile, ViewState, ChatSession } from './types';
 
 const resolveAuthenticatedView = (
   profile: CurrentUserProfile,
@@ -65,6 +67,14 @@ interface SanctuaryStore {
   plans: PricingPlanOption[];
   plansLoading: boolean;
   paymentPending: boolean;
+  boostCredits: number;
+  /** May be a timestamp in the past — that means no boost is active, not null. */
+  boostActiveUntil: string | null;
+  boostPending: boolean;
+  boostPack: BoostPackOption | null;
+  boostPackLoading: boolean;
+  /** Shown once per login/session-restore; dismissing it is session-only, not persisted. */
+  showBoostPromo: boolean;
   userLocation: string;
   userGender: Gender | '';
   currentProfile: CurrentUserProfile | null;
@@ -97,6 +107,10 @@ interface SanctuaryStore {
   loadGallery: () => Promise<void>;
   swipeProfile: (targetProfileId: string, direction: SwipeDirection) => Promise<{ matched: boolean }>;
   startPremiumPayment: (planId: PaidPricingPlan, phoneNumber: string) => Promise<void>;
+  loadBoostPack: () => Promise<void>;
+  startBoostPayment: (phoneNumber: string) => Promise<void>;
+  activateBoost: () => Promise<void>;
+  dismissBoostPromo: () => void;
   loadChats: () => Promise<void>;
   markChatRead: (chatId: string) => Promise<void>;
   acknowledgeBoundaryFor: (chatId: string) => Promise<void>;
@@ -124,6 +138,10 @@ const resetUnauthedState = (): Pick<
   | 'paymentPending'
   | 'userLocation'
   | 'userGender'
+  | 'boostCredits'
+  | 'boostActiveUntil'
+  | 'boostPending'
+  | 'showBoostPromo'
 > => ({
   currentProfile: null,
   activeChats: [],
@@ -141,6 +159,10 @@ const resetUnauthedState = (): Pick<
   paymentPending: false,
   userLocation: '',
   userGender: '',
+  boostCredits: 0,
+  boostActiveUntil: null,
+  boostPending: false,
+  showBoostPromo: false,
 });
 
 // Module-level so a second payment attempt cancels the first poller rather than
@@ -151,6 +173,17 @@ const stopPaymentPolling = () => {
   if (paymentPollTimer) {
     clearTimeout(paymentPollTimer);
     paymentPollTimer = null;
+  }
+};
+
+// Separate from paymentPollTimer so a boost purchase in flight doesn't cancel
+// a concurrent premium purchase's poll, or vice versa.
+let boostPaymentPollTimer: ReturnType<typeof setTimeout> | null = null;
+
+const stopBoostPaymentPolling = () => {
+  if (boostPaymentPollTimer) {
+    clearTimeout(boostPaymentPollTimer);
+    boostPaymentPollTimer = null;
   }
 };
 
@@ -171,6 +204,12 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
   plans: [],
   plansLoading: false,
   paymentPending: false,
+  boostCredits: 0,
+  boostActiveUntil: null,
+  boostPending: false,
+  boostPack: null,
+  boostPackLoading: false,
+  showBoostPromo: false,
   userLocation: '',
   userGender: '',
   currentProfile: null,
@@ -254,15 +293,22 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         paymentAmountKsh: profileViewStatus.paymentAmountKsh,
         profileViewLockUntil: profileViewStatus.lockedUntil,
         isPremium: profile.isPremium,
+        boostCredits: profile.boostCredits,
+        boostActiveUntil: profile.boostActiveUntil,
         userLocation: profile.location,
         userGender: profile.gender,
         view: targetView,
         sessionReady: true,
         isBusy: false,
+        // Fires on every sign-in and every restored session, once the user is
+        // past onboarding/pricing setup — dismissing it is session-only, so it
+        // reappears on the next bootstrap (next login) regardless.
+        showBoostPromo: targetView === 'gallery',
       });
 
       if (targetView === 'gallery') {
         await get().loadGallery();
+        void get().loadBoostPack();
       }
     } catch (error) {
       set({
@@ -283,6 +329,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         void get().bootstrapAuthenticatedState();
       } else {
         stopPaymentPolling();
+        stopBoostPaymentPolling();
         set({
           ...resetUnauthedState(),
           view: 'home',
@@ -765,6 +812,143 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     };
 
     paymentPollTimer = setTimeout(() => void poll(), 3000);
+  },
+
+  loadBoostPack: async () => {
+    if (get().boostPackLoading || get().boostPack) {
+      return;
+    }
+
+    set({ boostPackLoading: true });
+
+    try {
+      set({ boostPack: await fetchBoostPack(), boostPackLoading: false });
+    } catch (error) {
+      set({ boostPackLoading: false });
+      console.error('Unable to load the boost pack:', error);
+    }
+  },
+
+  /**
+   * Same STK-push-then-poll shape as startPremiumPayment, but for the boost
+   * SKU: on completion it credits boost_credits, never is_premium. Uses its
+   * own poll timer so it can't cancel (or be cancelled by) a concurrent
+   * premium purchase.
+   */
+  startBoostPayment: async (phoneNumber) => {
+    const profile = get().currentProfile;
+
+    if (!profile) {
+      set({ errorMessage: 'You must be signed in to buy a boost.' });
+      return;
+    }
+
+    const skuId: PurchasableSkuId = get().boostPack?.id ?? 'boost_pack_2';
+
+    stopBoostPaymentPolling();
+    set({ isBusy: true, boostPending: false, errorMessage: '', infoMessage: '' });
+
+    let reference: string;
+    let promptMessage: string;
+
+    try {
+      ({ reference, message: promptMessage } = await requestMpesaCharge(skuId, phoneNumber));
+    } catch (error) {
+      set({
+        isBusy: false,
+        errorMessage: error instanceof Error ? error.message : 'Unable to start M-Pesa payment.',
+      });
+      throw error;
+    }
+
+    set({
+      isBusy: false,
+      boostPending: true,
+      infoMessage: promptMessage ||
+        'STK push sent. Enter your M-Pesa PIN on your phone to buy your boosts.',
+    });
+
+    const deadline = Date.now() + 120_000;
+
+    const finish = async (settled: 'completed' | 'failed' | 'amount_mismatch') => {
+      stopBoostPaymentPolling();
+
+      if (settled !== 'completed') {
+        set({
+          boostPending: false,
+          infoMessage: '',
+          errorMessage: settled === 'amount_mismatch'
+            ? 'The amount received did not match the boost pack price. Contact support with your M-Pesa code.'
+            : 'The M-Pesa payment was not completed. You can try again.',
+        });
+        return;
+      }
+
+      const refreshedProfile = await getMyProfile();
+
+      set({
+        currentProfile: refreshedProfile,
+        boostCredits: refreshedProfile?.boostCredits ?? 0,
+        boostActiveUntil: refreshedProfile?.boostActiveUntil ?? null,
+        boostPending: false,
+        infoMessage: 'Payment confirmed. Your boosts are ready to use.',
+      });
+    };
+
+    const poll = async () => {
+      try {
+        const state = await getPaymentState(reference);
+
+        if (state === 'completed' || state === 'failed' || state === 'amount_mismatch') {
+          await finish(state);
+          return;
+        }
+      } catch (error) {
+        console.error('Boost payment status check failed:', error);
+      }
+
+      if (Date.now() >= deadline) {
+        stopBoostPaymentPolling();
+        set({
+          boostPending: false,
+          infoMessage:
+            'Still waiting for M-Pesa to confirm. If you completed the payment, reopen the app in a moment.',
+        });
+        return;
+      }
+
+      boostPaymentPollTimer = setTimeout(() => void poll(), 3000);
+    };
+
+    boostPaymentPollTimer = setTimeout(() => void poll(), 3000);
+  },
+
+  activateBoost: async () => {
+    try {
+      const outcome = await activateBoostCredit();
+
+      if (outcome === 'activated') {
+        const refreshedProfile = await getMyProfile();
+        set({
+          currentProfile: refreshedProfile,
+          boostCredits: refreshedProfile?.boostCredits ?? 0,
+          boostActiveUntil: refreshedProfile?.boostActiveUntil ?? null,
+          infoMessage: 'Boost activated for 30 minutes.',
+        });
+      } else if (outcome === 'no_credits') {
+        set({ errorMessage: 'You have no boosts left. Buy a Boost Pack to activate one.' });
+      } else if (outcome === 'already_active') {
+        set({ errorMessage: 'A boost is already active. Wait for it to finish before activating another.' });
+      }
+    } catch (error) {
+      set({ errorMessage: error instanceof Error ? error.message : 'Unable to activate boost.' });
+    }
+  },
+
+  // Session-only: no DB/localStorage write, so the next login (or even a
+  // reload that restores the session) shows the promo again by design.
+  dismissBoostPromo: () => {
+    set({ showBoostPromo: false });
   },
 
   loadChats: async () => {

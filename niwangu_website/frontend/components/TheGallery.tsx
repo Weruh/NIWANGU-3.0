@@ -3,10 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
-import { Check, Heart, X } from 'lucide-react';
+import { Check, Heart, X, Zap } from 'lucide-react';
 import { ProfileMenu } from './ProfileMenu';
 import { OptimizedImage } from './OptimizedImage';
 import { optimizeImageUrl } from '../lib/images';
+
+const formatCountdown = (ms: number) => {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 export const TheGallery: FC = () => {
   const {
@@ -17,6 +24,9 @@ export const TheGallery: FC = () => {
     dailyProfileViews,
     paymentRequired,
     isPremium,
+    boostCredits,
+    boostActiveUntil,
+    activateBoost,
     swipeProfile,
     loadGallery,
     activeChats,
@@ -29,11 +39,35 @@ export const TheGallery: FC = () => {
     dailyProfileViews: state.dailyProfileViews,
     paymentRequired: state.paymentRequired,
     isPremium: state.isPremium,
+    boostCredits: state.boostCredits,
+    boostActiveUntil: state.boostActiveUntil,
+    activateBoost: state.activateBoost,
     swipeProfile: state.swipeProfile,
     loadGallery: state.loadGallery,
     activeChats: state.activeChats,
     setView: state.setView,
   })));
+
+  // boost_active_until is never reset to null server-side on expiry — a past
+  // timestamp means "no boost," so this ticks down to 0 and then the pill
+  // switches views on its own, no write-back needed.
+  const [boostRemainingMs, setBoostRemainingMs] = useState(0);
+
+  useEffect(() => {
+    if (!boostActiveUntil) {
+      setBoostRemainingMs(0);
+      return;
+    }
+
+    const target = new Date(boostActiveUntil).getTime();
+    const tick = () => setBoostRemainingMs(Math.max(0, target - Date.now()));
+    tick();
+
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [boostActiveUntil]);
+
+  const boostIsActive = boostRemainingMs > 0;
 
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const [blurAmount, setBlurAmount] = useState(20);
@@ -156,6 +190,30 @@ export const TheGallery: FC = () => {
       <div className="absolute top-0 left-0 right-0 z-50 p-4 flex justify-between items-center pointer-events-none">
         <h1 className="font-serif text-xl text-sandstone drop-shadow-md">Niwangu</h1>
         <div className="flex items-center gap-2 pointer-events-auto">
+          {boostIsActive ? (
+            <div className="flex h-9 items-center gap-1.5 rounded-full bg-sageDeep px-3.5 text-xs font-semibold text-white shadow-md">
+              <Zap className="h-3.5 w-3.5 animate-pulse" fill="currentColor" aria-hidden="true" />
+              <span className="tabular-nums">{formatCountdown(boostRemainingMs)}</span>
+            </div>
+          ) : boostCredits > 0 ? (
+            <button
+              type="button"
+              onClick={() => void activateBoost()}
+              className="flex h-9 items-center gap-1.5 rounded-full border border-white/40 bg-sandstone/10 px-3.5 text-xs font-semibold text-white backdrop-blur-md transition-colors hover:bg-sandstone/20"
+            >
+              <Zap className="h-3.5 w-3.5" aria-hidden="true" />
+              Boost ×{boostCredits}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => useSanctuaryStore.setState({ showBoostPromo: true })}
+              className="flex h-9 items-center gap-1.5 rounded-full border border-white/20 bg-sandstone/10 px-3.5 text-xs font-medium text-white/90 backdrop-blur-md transition-colors hover:bg-sandstone/20"
+            >
+              <Zap className="h-3.5 w-3.5" aria-hidden="true" />
+              Get Boost
+            </button>
+          )}
           <ProfileMenu light onOpenPaywall={() => setView('pricing')} />
         </div>
       </div>
