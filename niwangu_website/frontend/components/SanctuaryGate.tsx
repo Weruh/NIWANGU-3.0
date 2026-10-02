@@ -115,24 +115,9 @@ const steps = [
 ];
 
 const testimonials = [
-  {
-    image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1',
-    quote:
-      'Niwangu made dating feel calm again. The prompts helped us talk about values before anything felt rushed.',
-    name: 'Amina, Nairobi',
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-    quote:
-      'I joined because I wanted something slower and more honest. Three weeks later, I met someone who wanted the same.',
-    name: 'Daniel, Mombasa',
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2',
-    quote:
-      'The experience felt personal from the beginning. It gave us better questions and better reasons to keep showing up.',
-    name: 'Leah, Kisumu',
-  },
+ {image:'https://images.unsplash.com/photo-1524504388940-b1c1722653e1',quote:'What does building a life partnership look like for you?',name:'Conversation starter · Intentions'},
+ {image:'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',quote:'We both value integrity. How does that show up in your everyday life?',name:'Conversation starter · Values'},
+ {image:'https://images.unsplash.com/photo-1544005313-94ddf0286df2',quote:'What helps you feel comfortable when getting to know someone?',name:'Conversation starter · Boundaries'},
 ];
 
 const footerLinks = [
@@ -145,7 +130,7 @@ const footerLinks = [
 
 // Shown on the policy pages. A fixed revision date, not the current year:
 // these documents should say when they were last actually revised.
-const POLICY_LAST_UPDATED = '8 August 2026';
+const POLICY_LAST_UPDATED = '1 October 2026';
 
 const footerPages = {
   '/contact-us': {
@@ -194,8 +179,8 @@ const footerPages = {
         body: 'Two things must line up before anyone is shown to you: you are each looking for the other’s gender, and your answers about wanting children are not irreconcilable. Everyone else is ranked, not filtered — people whose Ritual answers align with yours come up first, and anyone who has already liked you is moved to the front.',
       },
       {
-        title: 'Why do I only see one profile at a time?',
-        body: 'Because the point is to consider someone rather than scroll past them. Coming back to the app re-shows the profile you have not swiped on yet, so refreshing never costs you a view.',
+        title: 'Can I browse profiles or focus on one person?',
+        body: 'Choose Discover to browse profile cards or Focus to consider one person at a time. Both modes share your decisions and profiles. Switching modes, refreshing, and opening a profile never consume decisions.',
       },
       {
         title: 'What does “Why you align” mean on a profile?',
@@ -203,7 +188,7 @@ const footerPages = {
       },
       {
         title: 'How much can I use for free?',
-        body: 'Five profile views every 24 hours, plus full access to conversations with anyone you have already matched with. The limit resets on a rolling 24-hour basis, not at midnight.',
+        body: 'Ten Like or Pass decisions each day, shared across Discover and Focus. Browsing and opening profiles use no decisions. Discovery pauses after your tenth decision, while matched chat stays free. The allowance resets at midnight Kenya time.',
       },
       {
         title: 'What do passes cost and how do I pay?',
@@ -227,7 +212,7 @@ const footerPages = {
       },
       {
         title: 'How do I end a conversation or report someone?',
-        body: 'Any conversation can be closed with a reason, which ends it respectfully for both people. To report behaviour rather than simply leave, email safety@niwangu.com with the member’s name and a screenshot.',
+        body: 'Any conversation can be closed with a reason, which ends it respectfully for both people. Use Safety on a profile or conversation to block someone or submit a confidential report. You can also email safety@niwangu.com.',
       },
     ],
   },
@@ -243,7 +228,7 @@ const footerPages = {
       },
       {
         title: 'What We Record As You Use Niwangu',
-        body: 'Which profiles you have been shown and when, your likes and passes, matches formed, when you last read a conversation, and standard technical logs. Profile views are recorded because they are how the free daily limit is counted.',
+        body: 'Your likes and passes, saved profiles, matches, reports and blocks, notification preferences, when you last read a conversation, and standard technical logs. Decisions are recorded to enforce the daily allowance.',
       },
       {
         title: 'Location',
@@ -259,7 +244,7 @@ const footerPages = {
       },
       {
         title: 'Who Else Processes Your Data',
-        body: 'Supabase provides the database, authentication, photo storage, and hosting that Niwangu runs on. Paystack processes payments. We do not sell your personal data, and we do not share it for advertising.',
+        body: 'Supabase provides the database, authentication, and photo storage. GitHub Pages hosts the website. Paystack processes payments. We do not sell your personal data, and we do not share it for advertising.',
       },
       {
         title: 'How Long We Keep It',
@@ -291,7 +276,7 @@ const footerPages = {
       },
       {
         title: 'Free Access and Passes',
-        body: 'Without a pass you may view five profiles every 24 hours and continue any conversation you already have. A pass removes that limit for a set number of days at the price shown when you buy it.',
+        body: 'Without a pass you have ten Like or Pass decisions per Kenya calendar day. Existing matched conversations stay free. A pass removes the decision limit and includes the Premium tools shown at checkout.',
       },
       {
         title: 'Payment',
@@ -370,7 +355,7 @@ const footerPages = {
 };
 
 const NiwanguLogo = ({ className = 'h-16 w-16' }: { className?: string }) => (
-  <img src="/niwangu-logo.png" alt="" className={`${className} object-contain`} aria-hidden="true" />
+  <img src="/niwangu-logo.png" alt="Niwangu" className={`${className} object-contain rounded-full`} />
 );
 
 const galleryPanels = [
@@ -420,8 +405,8 @@ const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number
     <header className="border-b border-midnight/10 bg-white/70 px-6 py-5 backdrop-blur sm:px-10 lg:px-14">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6">
         <a href="/" className="flex items-center gap-3 text-sageDeep" aria-label="Return to Niwangu homepage">
-          <NiwanguLogo className="h-10 w-10" />
-          <span className="font-serif text-2xl text-midnight">Niwangu</span>
+          <NiwanguLogo className="h-14 w-14" />
+
         </a>
         <a
           href="/"
@@ -497,10 +482,10 @@ export const SanctuaryGate: FC = () => {
           <div className="mx-auto w-full max-w-[560px]">
             <div className="mb-10 flex items-center gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white text-sageDeep shadow-lg shadow-sage/15 ring-1 ring-sage/10">
-                <NiwanguLogo className="h-10 w-10" />
+                <NiwanguLogo className="h-14 w-14" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sageDeep">Niwangu</p>
+
                 <p className="mt-1.5 text-xl font-medium leading-none tracking-tight text-midnight sm:text-2xl">
                   Love, with Intention.
                 </p>
@@ -547,8 +532,8 @@ export const SanctuaryGate: FC = () => {
                 <span className="mt-2 block">thoughtful steps</span>
               </div>
               <div>
-                <strong className="block text-3xl font-semibold leading-none tracking-tight text-midnight">5</strong>
-                <span className="mt-2 block">daily intentions</span>
+                <strong className="block text-3xl font-semibold leading-none tracking-tight text-midnight">10</strong>
+                <span className="mt-2 block">daily decisions</span>
               </div>
               <div>
                 <strong className="block text-3xl font-semibold leading-none tracking-tight text-midnight">1</strong>
@@ -594,7 +579,7 @@ export const SanctuaryGate: FC = () => {
         <div className="mx-auto w-full max-w-7xl">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageLight">Real love stories</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageLight">A thoughtful first message</p>
               <h2 id="love-stories" className="mt-4 font-serif text-4xl sm:text-5xl">
                 A softer start can still be serious.
               </h2>
@@ -604,7 +589,7 @@ export const SanctuaryGate: FC = () => {
                 type="button"
                 onClick={() => scrollTestimonials('left')}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-midnight focus:outline-none focus:ring-2 focus:ring-sageLight"
-                aria-label="Previous testimonial"
+                aria-label="Previous conversation starter"
               >
                 <ArrowLeft className="h-5 w-5" aria-hidden="true" />
               </button>
@@ -612,7 +597,7 @@ export const SanctuaryGate: FC = () => {
                 type="button"
                 onClick={() => scrollTestimonials('right')}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-midnight transition hover:bg-sageLight focus:outline-none focus:ring-2 focus:ring-sageLight"
-                aria-label="Next testimonial"
+                aria-label="Next conversation starter"
               >
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </button>
@@ -636,11 +621,7 @@ export const SanctuaryGate: FC = () => {
                   />
                   <div>
                     <p className="font-semibold">{testimonial.name}</p>
-                    <div className="mt-1 flex gap-1 text-sageDeep" aria-label="Five star rating">
-                      {Array.from({ length: 5 }).map((_, index) => (
-                        <Star key={index} className="h-4 w-4 fill-current" aria-hidden="true" />
-                      ))}
-                    </div>
+
                   </div>
                 </div>
                 <blockquote className="mt-8 font-serif text-2xl leading-9">"{testimonial.quote}"</blockquote>
@@ -683,8 +664,8 @@ export const SanctuaryGate: FC = () => {
             className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-midnight"
             aria-label="Niwangu home"
           >
-            <NiwanguLogo className="h-7 w-7" />
-            <span className="text-base font-semibold tracking-tight text-midnight">Niwangu</span>
+            <NiwanguLogo className="h-10 w-10" />
+
           </a>
 
           <nav

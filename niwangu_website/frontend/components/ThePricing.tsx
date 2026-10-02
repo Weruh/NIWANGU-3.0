@@ -291,63 +291,15 @@ export const ThePricing: FC = () => {
             onClick={() => void continueWithFreePlan()}
             className="text-xs text-midnight/80 hover:text-midnight underline"
           >
-            Or continue with the Free Plan (5 free profile views / 24 hrs)
+            Or continue with the Free Plan (10 Like/Pass decisions per day)
           </button>
         </div>
 
         {/* Strategic Rationale Breakdown: Why KSh 199 is a good entry point */}
-        <div className="bg-midnight text-sandstone rounded-2xl p-6 sm:p-8 shadow-xl max-w-4xl mx-auto w-full">
-          <div className="flex items-center gap-2 mb-4 text-emerald-400">
-            <Zap className="w-5 h-5" />
-            <h3 className="text-xl font-semibold tracking-tight text-sandstone">
-              Why KSh 199 is a good entry point
-            </h3>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 mb-6">
-            <div className="space-y-3 text-sm text-sandstone/80">
-              <p className="font-medium text-sandstone">
-                For a new platform like Niwangu:
-              </p>
-              <ul className="space-y-2 list-disc list-inside text-sandstone/70">
-                <li>
-                  <strong className="text-sandstone">Impulse Purchase:</strong>{" "}
-                  KSh 199 feels lightweight and low-risk for users.
-                </li>
-                <li>
-                  <strong className="text-sandstone">
-                    Customer Acquisition:
-                  </strong>{" "}
-                  Accelerates acquiring your first paying members.
-                </li>
-                <li>
-                  <strong className="text-sandstone">
-                    High Renewal Conversion:
-                  </strong>{" "}
-                  Once members experience Premium matches, they are far more
-                  likely to renew or choose a 90/180/365 day plan.
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-sandstone/10 rounded-xl p-4 text-xs space-y-3 text-sandstone/85 border border-white/10">
-              <div className="flex items-center gap-1.5 font-bold text-sandstone text-sm">
-                <Award className="w-4 h-4 text-amber-400" /> 7-Day Trial (KSh
-                99) Low-Friction Entry
-              </div>
-              <p>
-                Many users hesitate to commit to a full month right away. The{" "}
-                <strong>7-Day Trial (KSh 99)</strong> plan acts as a
-                low-friction entry point and can significantly increase the
-                number of users willing to try Premium.
-              </p>
-              <p className="text-sandstone/70">
-                You can track conversions from the trial to longer subscriptions
-                and adjust your pricing strategy over time based on user
-                feedback.
-              </p>
-            </div>
-          </div>
+        <div className="mx-auto mb-10 max-w-3xl rounded-2xl border border-midnight/10 bg-white/60 p-6 text-midnight">
+          <h3 className="font-serif text-2xl">More opportunities. Your choice.</h3>
+          <p className="mt-3 text-sm leading-6 text-midnight/75">Every pass includes the same Premium tools. Choose the duration that suits you. Matching always requires mutual interest, and conversations with matches stay free.</p>
+          <p className="mt-3 text-sm leading-6 text-midnight/75">Includes two 30-minute boosts per 30 purchased days, with at least one boost for shorter passes. No automatic renewal. Buying another pass adds time to your remaining access.</p>
         </div>
 
         {/* M-Pesa Checkout Modal when Get started is clicked */}

@@ -1,9 +1,8 @@
 {
   "dependencies": {
-    "@supabase/supabase-js": "^2.104.0",
-    "deno": "^2.9.4"
+    "deno": "2.9.4"
   },
   "devDependencies": {
-    "supabase": "^2.111.0"
+    "supabase": "2.111.0"
   }
 }

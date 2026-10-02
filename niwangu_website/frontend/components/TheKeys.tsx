@@ -3,6 +3,7 @@ import { motion, useAnimation } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
+import { requestPasswordReset } from '../lib/api';
 import { ArrowLeft } from 'lucide-react';
 
 export const TheKeys: FC = () => {
@@ -20,7 +21,7 @@ export const TheKeys: FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPassword = password.trim();
+    const normalizedPassword = password;
 
     if (!normalizedEmail || !normalizedPassword) {
       setError('Enter your email and password.');
@@ -43,7 +44,7 @@ export const TheKeys: FC = () => {
       exit={{ opacity: 0, x: -20 }}
       className="min-h-dvh bg-sandstone flex flex-col p-6"
     >
-      <button
+      <button aria-label="Return to homepage"
         onClick={() => {
           clearMessages();
           setView('home');
@@ -54,8 +55,8 @@ export const TheKeys: FC = () => {
       </button>
 
       <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
-        <h2 className="font-serif text-4xl text-midnight mb-2">The Keys</h2>
-        <p className="text-midnight/80 mb-10 font-light">Sign in with your Supabase account.</p>
+        <h2 className="font-serif text-4xl text-midnight mb-2">Welcome back</h2>
+        <p className="text-midnight/80 mb-10 font-light">Sign in to continue your connections.</p>
 
         <motion.form
           onSubmit={(event) => {
@@ -65,9 +66,9 @@ export const TheKeys: FC = () => {
           animate={formControls}
         >
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Email</label>
+            <label htmlFor="signin-email" className="text-sm font-medium text-midnight/80">Email</label>
             <input
-              type="email"
+              id="signin-email" autoComplete="email" required type="email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -79,9 +80,9 @@ export const TheKeys: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Password</label>
+            <label htmlFor="signin-password" className="text-sm font-medium text-midnight/80">Password</label>
             <input
-              type="password"
+              id="signin-password" autoComplete="current-password" required type="password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -92,11 +93,12 @@ export const TheKeys: FC = () => {
             />
           </div>
 
+          <button type="button" className="min-h-11 text-left text-sm text-sageDeep underline" onClick={async()=>{if(!email.trim()){setError('Enter your email address first.');return;}try{await requestPasswordReset(email.trim().toLowerCase());useSanctuaryStore.setState({infoMessage:'If an account exists, a recovery link will arrive in your email.'});setError('');}catch(e){setError(e instanceof Error?e.message:'Unable to send recovery email.');}}}>Forgot password?</button>
           {/* infoMessage is rendered globally in App.tsx. */}
           {error && <p className="text-sm text-red-800">{error}</p>}
 
           <Button type="submit" className="mt-4" disabled={isBusy}>
-            {isBusy ? 'Entering...' : 'Enter Sanctuary'}
+            {isBusy ? 'Entering...' : 'Sign in'}
           </Button>
         </motion.form>
       </div>

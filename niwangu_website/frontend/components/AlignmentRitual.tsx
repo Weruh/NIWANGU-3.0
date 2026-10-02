@@ -33,6 +33,7 @@ export const AlignmentRitual: FC = () => {
 
   const handleOptionClick = async (option: string) => {
     await saveRitualAnswer(currentQ.id, option);
+    if(useSanctuaryStore.getState().errorMessage)return;
 
     if (ritualStep < RITUAL_QUESTIONS.length - 1) {
       setTimeout(() => setRitualStep(ritualStep + 1), 250);
@@ -47,7 +48,7 @@ export const AlignmentRitual: FC = () => {
     }
 
     await saveRitualAnswer(currentQ.id, textInput);
-    setView('essence');
+    if(!useSanctuaryStore.getState().errorMessage)setView(useSanctuaryStore.getState().currentProfile?.profileReady?'profile':'essence');
   };
 
   if (!introFinished) {
@@ -92,9 +93,10 @@ export const AlignmentRitual: FC = () => {
             className="flex flex-col gap-8"
           >
             <span className="text-sageDeep font-medium tracking-widest text-xs uppercase">
-              Step {ritualStep + 1} of {RITUAL_QUESTIONS.length} - {currentQ.category}
+              Question {ritualStep + 1} of {RITUAL_QUESTIONS.length} - {currentQ.category}
             </span>
 
+            {ritualStep>0&&<button type="button" disabled={isBusy} onClick={()=>setRitualStep(ritualStep-1)} className="self-start min-h-11 text-sm text-sageDeep">← Previous question</button>}
             <h2 className="font-serif text-3xl md:text-4xl text-midnight leading-tight">
               {currentQ.question}
             </h2>

@@ -1,4 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2.112.0";
 
 // The caller supplies only a plan id and a phone number. Identity comes from the
 // JWT and the price comes from public.pricing_plans, so neither can be forged by
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
 
     const { phoneNumber, planId } = payload;
 
-    if (!phoneNumber || !planId) {
+    if (typeof phoneNumber !== "string" || typeof planId !== "string" || !phoneNumber || !planId) {
       return fail(400, "A phone number and a plan are required.");
     }
 
@@ -209,6 +209,7 @@ Deno.serve(async (req) => {
     let chargeRes: Response;
     try {
       chargeRes = await fetch(`${PAYSTACK_API}/charge`, {
+        signal: AbortSignal.timeout(15000),
         method: "POST",
         headers: {
           Authorization: `Bearer ${secretKey}`,

@@ -16,6 +16,9 @@ type ModalProps = {
   initialFocusRef?: RefObject<HTMLElement | null>;
 };
 
+const modalStack: HTMLElement[] = [];
+let bodyOverflowBeforeModals = '';
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
@@ -44,10 +47,12 @@ export const Modal: FC<ModalProps> = ({
     previouslyFocused.current = document.activeElement as HTMLElement | null;
 
     const panel = panelRef.current;
+    if(panel){if(modalStack.length===0)bodyOverflowBeforeModals=document.body.style.overflow;modalStack.push(panel);}
     const firstFocusable = panel?.querySelector<HTMLElement>(FOCUSABLE);
     (initialFocusRef?.current ?? firstFocusable ?? panel)?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if(modalStack.at(-1)!==panel)return;
       if (event.key === 'Escape') {
         event.stopPropagation();
         onCloseRef.current();
@@ -60,7 +65,7 @@ export const Modal: FC<ModalProps> = ({
 
       const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
       if (focusable.length === 0) {
-        return;
+        event.preventDefault();panel.focus();return;
       }
 
       const first = focusable[0];
@@ -76,12 +81,12 @@ export const Modal: FC<ModalProps> = ({
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    const { overflow } = document.body.style;
     document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = overflow;
+      const index=panel?modalStack.indexOf(panel):-1;if(index>=0)modalStack.splice(index,1);
+      if(modalStack.length===0)document.body.style.overflow = bodyOverflowBeforeModals;
       previouslyFocused.current?.focus();
     };
   }, []);

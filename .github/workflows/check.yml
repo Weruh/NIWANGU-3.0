@@ -1,0 +1,62 @@
+name: Release checks
+
+on:
+  pull_request:
+    branches: [main, development]
+  push:
+    branches: [development]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: niwangu_website/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: niwangu_website/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  edge-functions:
+    runs-on: ubuntu-latest
+    env:
+      DENO_NO_PACKAGE_JSON: "1"
+    defaults:
+      run:
+        working-directory: niwangu_website/supabase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.9.4"
+      - run: deno check --frozen --node-modules-dir=none functions/paystack-charge/index.ts functions/paystack-webhook/index.ts functions/delete-account/index.ts
+      - run: deno test --frozen --node-modules-dir=none --allow-env tests/webhook_test.ts tests/delete_account_test.ts
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: niwangu_test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/niwangu_test
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash niwangu_website/supabase/scripts/check-db.sh

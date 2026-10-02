@@ -1,4 +1,4 @@
-import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
   ChatSession,
   CurrentUserProfile,
@@ -17,9 +17,9 @@ import {
   SwipeDirection,
   SwipeResult,
   UserProfile,
-} from '../types';
-import { getProfileFieldsFromAnswers } from './ritual';
-import { getSupabase } from './supabase';
+} from "../types";
+import { getProfileFieldsFromAnswers } from "./ritual";
+import { getSupabase } from "./supabase";
 
 type ProfileRow = {
   id: string;
@@ -40,6 +40,7 @@ type ProfileRow = {
   daily_swipe_limit: number | null;
   boost_credits: number | null;
   boost_active_until: string | null;
+  discovery_paused: boolean;
 };
 
 type PhotoRow = {
@@ -66,6 +67,7 @@ type GalleryRow = {
   why_niwangu: string;
   alignment_reasons: string[] | null;
   photo_url: string | null;
+  photos?: string[];
 };
 
 type MatchRow = {
@@ -103,32 +105,34 @@ type MpesaChargeResult = {
   message: string;
 };
 
-const PROFILE_PHOTO_BUCKET = 'profile-photos';
+const PROFILE_PHOTO_BUCKET = "profile-photos";
 
 // is_premium stays true after a subscription lapses, so mirror the server's
 // has_active_premium() rule here. Otherwise the UI shows "Active" while every
 // gated RPC refuses.
 const hasActivePremium = (row: ProfileRow) =>
   Boolean(row.is_premium) &&
-  (!row.premium_expires_at || new Date(row.premium_expires_at).getTime() > Date.now());
+  (!row.premium_expires_at ||
+    new Date(row.premium_expires_at).getTime() > Date.now());
 
 const mapProfile = (row: ProfileRow): CurrentUserProfile => ({
   id: row.id,
   authUserId: row.auth_user_id,
-  name: row.full_name ?? '',
+  name: row.full_name ?? "",
   age: row.age ?? null,
-  gender: row.gender ?? '',
-  seekingGender: row.seeking_gender ?? '',
-  location: row.location ?? '',
-  intent: row.intent ?? '',
-  coreValue: row.core_value ?? '',
-  whyNiwangu: row.why_niwangu ?? '',
-  boundary: row.boundary ?? '',
+  gender: row.gender ?? "",
+  seekingGender: row.seeking_gender ?? "",
+  location: row.location ?? "",
+  intent: row.intent ?? "",
+  coreValue: row.core_value ?? "",
+  whyNiwangu: row.why_niwangu ?? "",
+  boundary: row.boundary ?? "",
   onboardingCompleted: Boolean(row.onboarding_completed),
   profileReady: Boolean(row.profile_ready),
   isPremium: hasActivePremium(row),
   premiumExpiresAt: row.premium_expires_at,
-  dailySwipeLimit: row.daily_swipe_limit ?? 5,
+  discoveryPaused: Boolean(row.discovery_paused),
+  dailySwipeLimit: row.daily_swipe_limit ?? 10,
   boostCredits: row.boost_credits ?? 0,
   boostActiveUntil: row.boost_active_until,
 });
@@ -146,7 +150,11 @@ const mapGalleryProfile = (row: GalleryRow): UserProfile => ({
   age: row.age,
   gender: row.gender,
   distance: row.location,
-  photos: row.photo_url ? [row.photo_url] : [],
+  photos: row.photos?.length
+    ? row.photos
+    : row.photo_url
+      ? [row.photo_url]
+      : [],
   boundary: row.boundary,
   ritualAnswers: {
     1: row.intent,
@@ -160,12 +168,12 @@ const mapChatSession = (row: MatchRow): ChatSession => ({
   id: row.id,
   partnerId: row.partner_id,
   partnerName: row.partner_name,
-  partnerPhoto: row.partner_photo ?? 'https://picsum.photos/200/200?grayscale',
+  partnerPhoto: row.partner_photo ?? "https://picsum.photos/200/200?grayscale",
   messages: [],
   gardenLevel: row.garden_level,
   valuesOverlap: row.values_overlap ?? [],
   isClosed: row.is_closed,
-  lastMessage: row.last_message ?? '',
+  lastMessage: row.last_message ?? "",
   lastMessageAt: row.last_message_at,
   unreadCount: row.unread_count ?? 0,
   partnerBoundary: row.partner_boundary,
@@ -174,9 +182,11 @@ const mapChatSession = (row: MatchRow): ChatSession => ({
   boundaryAcknowledged: row.boundary_acknowledged ?? true,
 });
 
-const mapProfileViewStatus = (row: ProfileViewStatusRow | null | undefined): ProfileViewStatus => ({
+const mapProfileViewStatus = (
+  row: ProfileViewStatusRow | null | undefined,
+): ProfileViewStatus => ({
   usedViews: row?.used_views ?? 0,
-  remainingViews: row?.remaining_views ?? 5,
+  remainingViews: row?.remaining_views ?? 10,
   isLocked: Boolean(row?.is_locked),
   lockedUntil: row?.locked_until ?? null,
   // get_profile_view_status() returns the cheapest live plan; this only covers
@@ -213,7 +223,7 @@ export const signOut = async () => {
 
 export const signUpWithEmail = async (input: SignUpInput) => {
   const supabase = getSupabase();
-  const seekingGender = input.gender === 'female' ? 'male' : 'female';
+  const seekingGender = input.gender === "female" ? "male" : "female";
 
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
@@ -264,11 +274,11 @@ export const getMyProfile = async (): Promise<CurrentUserProfile | null> => {
   }
 
   const { data, error } = await supabase
-    .from('profiles')
+    .from("profiles")
     .select(
-      'id, auth_user_id, full_name, age, gender, seeking_gender, location, intent, core_value, why_niwangu, boundary, onboarding_completed, profile_ready, is_premium, premium_expires_at, daily_swipe_limit, boost_credits, boost_active_until',
+      "id, auth_user_id, full_name, age, gender, seeking_gender, location, intent, core_value, why_niwangu, boundary, onboarding_completed, profile_ready, is_premium, premium_expires_at, daily_swipe_limit, boost_credits, boost_active_until, discovery_paused",
     )
-    .eq('auth_user_id', user.id)
+    .eq("auth_user_id", user.id)
     .single();
 
   if (error) {
@@ -278,43 +288,42 @@ export const getMyProfile = async (): Promise<CurrentUserProfile | null> => {
   return mapProfile(data as ProfileRow);
 };
 
-export const updateMyProfile = async (profileId: string, input: ProfileUpdateInput) => {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      full_name: input.name,
-      age: input.age,
-      gender: input.gender,
-      seeking_gender: input.seekingGender,
-      location: input.location,
-      intent: input.intent,
-      core_value: input.coreValue,
-      why_niwangu: input.whyNiwangu,
-      boundary: input.boundary,
-    })
-    .eq('id', profileId);
-
-  if (error) {
-    throw error;
-  }
+export const updateMyProfile = async (
+  _profileId: string,
+  input: ProfileUpdateInput,
+) => {
+  const { error } = await getSupabase().rpc("update_member_profile", {
+    p_name: input.name,
+    p_age: input.age,
+    p_gender: input.gender,
+    p_seeking_gender: input.seekingGender,
+    p_location: input.location,
+    p_intent: input.intent,
+    p_core_value: input.coreValue,
+    p_why: input.whyNiwangu,
+    p_boundary: input.boundary,
+  });
+  if (error) throw error;
 };
 
 export const getMyRitualAnswers = async (profileId: string) => {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('ritual_answers')
-    .select('question_id, answer_text')
-    .eq('profile_id', profileId);
+    .from("ritual_answers")
+    .select("question_id, answer_text")
+    .eq("profile_id", profileId);
 
   if (error) {
     throw error;
   }
 
-  return (data as RitualAnswerRow[]).reduce<Record<number, string>>((acc, item) => {
-    acc[item.question_id] = item.answer_text;
-    return acc;
-  }, {});
+  return (data as RitualAnswerRow[]).reduce<Record<number, string>>(
+    (acc, item) => {
+      acc[item.question_id] = item.answer_text;
+      return acc;
+    },
+    {},
+  );
 };
 
 export const saveRitualAnswer = async (
@@ -326,13 +335,13 @@ export const saveRitualAnswer = async (
   const supabase = getSupabase();
   const nextAnswers = { ...currentAnswers, [questionId]: answer };
 
-  const { error: answerError } = await supabase.from('ritual_answers').upsert(
+  const { error: answerError } = await supabase.from("ritual_answers").upsert(
     {
       profile_id: profileId,
       question_id: questionId,
       answer_text: answer,
     },
-    { onConflict: 'profile_id,question_id' },
+    { onConflict: "profile_id,question_id" },
   );
 
   if (answerError) {
@@ -341,9 +350,9 @@ export const saveRitualAnswer = async (
 
   const profileFields = getProfileFieldsFromAnswers(nextAnswers);
   const { error: profileError } = await supabase
-    .from('profiles')
+    .from("profiles")
     .update(profileFields)
-    .eq('id', profileId);
+    .eq("id", profileId);
 
   if (profileError) {
     throw profileError;
@@ -355,10 +364,10 @@ export const saveRitualAnswer = async (
 export const listProfilePhotos = async (profileId: string) => {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('profile_photos')
-    .select('id, public_url, sort_order, storage_path')
-    .eq('profile_id', profileId)
-    .order('sort_order', { ascending: true });
+    .from("profile_photos")
+    .select("id, public_url, sort_order, storage_path")
+    .eq("profile_id", profileId)
+    .order("sort_order", { ascending: true });
 
   if (error) {
     throw error;
@@ -379,19 +388,19 @@ const getCurrentUser = async () => {
   }
 
   if (!user) {
-    throw new Error('You must be signed in to do that.');
+    throw new Error("You must be signed in to do that.");
   }
 
   return user;
 };
 
 const fileExtension = (fileName: string) => {
-  const parts = fileName.split('.');
-  return parts.length > 1 ? parts.pop() : 'jpg';
+  const parts = fileName.split(".");
+  return parts.length > 1 ? parts.pop() : "jpg";
 };
 
 const prepareProfilePhoto = async (file: File) => {
-  if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+  if (!file.type.startsWith("image/") || file.type === "image/gif") {
     return file;
   }
 
@@ -401,11 +410,11 @@ const prepareProfilePhoto = async (file: File) => {
     const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
     const width = Math.max(1, Math.round(bitmap.width * scale));
     const height = Math.max(1, Math.round(bitmap.height * scale));
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
 
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) {
       bitmap.close();
       return file;
@@ -415,35 +424,43 @@ const prepareProfilePhoto = async (file: File) => {
     bitmap.close();
 
     const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/jpeg', 0.82);
+      canvas.toBlob(resolve, "image/jpeg", 0.82);
     });
 
     if (!blob || blob.size >= file.size) {
       return file;
     }
 
-    return new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'photo'}.jpg`, {
-      type: 'image/jpeg',
-      lastModified: Date.now(),
-    });
+    return new File(
+      [blob],
+      `${file.name.replace(/\.[^.]+$/, "") || "photo"}.jpg`,
+      {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      },
+    );
   } catch {
     return file;
   }
 };
 
-export const uploadProfilePhoto = async (profileId: string, file: File, sortOrder: number) => {
+export const uploadProfilePhoto = async (
+  profileId: string,
+  file: File,
+  sortOrder: number,
+) => {
   const user = await getCurrentUser();
   const supabase = getSupabase();
   const uploadFile = await prepareProfilePhoto(file);
-  const ext = fileExtension(uploadFile.name || 'photo.jpg');
+  const ext = fileExtension(uploadFile.name || "photo.jpg");
   const storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from(PROFILE_PHOTO_BUCKET)
     .upload(storagePath, uploadFile, {
-      cacheControl: '31536000',
+      cacheControl: "31536000",
       upsert: false,
-      contentType: uploadFile.type || 'image/jpeg',
+      contentType: uploadFile.type || "image/jpeg",
     });
 
   if (uploadError) {
@@ -454,7 +471,7 @@ export const uploadProfilePhoto = async (profileId: string, file: File, sortOrde
     .from(PROFILE_PHOTO_BUCKET)
     .getPublicUrl(storagePath);
 
-  const { error: insertError } = await supabase.from('profile_photos').insert({
+  const { error: insertError } = await supabase.from("profile_photos").insert({
     profile_id: profileId,
     sort_order: sortOrder,
     public_url: publicData.publicUrl,
@@ -466,9 +483,9 @@ export const uploadProfilePhoto = async (profileId: string, file: File, sortOrde
   }
 
   const { error: updateError } = await supabase
-    .from('profiles')
+    .from("profiles")
     .update({ profile_ready: false })
-    .eq('id', profileId);
+    .eq("id", profileId);
 
   if (updateError) {
     throw updateError;
@@ -488,7 +505,10 @@ export const deleteProfilePhoto = async (photo: ProfilePhoto) => {
     }
   }
 
-  const { error } = await supabase.from('profile_photos').delete().eq('id', photo.id);
+  const { error } = await supabase
+    .from("profile_photos")
+    .delete()
+    .eq("id", photo.id);
 
   if (error) {
     throw error;
@@ -498,19 +518,18 @@ export const deleteProfilePhoto = async (photo: ProfilePhoto) => {
 export const finalizeProfileReadiness = async (profileId: string) => {
   const supabase = getSupabase();
   const { error } = await supabase
-    .from('profiles')
+    .from("profiles")
     .update({ profile_ready: true })
-    .eq('id', profileId);
+    .eq("id", profileId);
 
   if (error) {
     throw error;
   }
 };
 
-
 export const getProfileViewStatus = async (): Promise<ProfileViewStatus> => {
   const supabase = getSupabase();
-  const { data, error } = await supabase.rpc('get_profile_view_status');
+  const { data, error } = await supabase.rpc("get_profile_view_status");
 
   if (error) {
     throw error;
@@ -523,21 +542,19 @@ export const getProfileViewStatus = async (): Promise<ProfileViewStatus> => {
   return mapProfileViewStatus(row);
 };
 
-export const listGalleryProfiles = async () => {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.rpc('get_gallery_profiles', {
-    limit_count: 1,
+export const listGalleryProfiles = async (
+  section: import("../types").DiscoverySection = "discover",
+  offset = 0,
+) => {
+  const { data, error } = await getSupabase().rpc("get_discovery_profiles", {
+    p_section: section,
+    p_offset: offset,
+    p_limit: 20,
   });
-
-  if (error) {
-    throw error;
-  }
-
-  const status = await getProfileViewStatus();
-
+  if (error) throw error;
   return {
     profiles: (data as GalleryRow[]).map(mapGalleryProfile),
-    status,
+    status: await getProfileViewStatus(),
   };
 };
 
@@ -546,7 +563,7 @@ export const handleSwipe = async (
   direction: SwipeDirection,
 ): Promise<SwipeResult> => {
   const supabase = getSupabase();
-  const { data, error } = await supabase.rpc('handle_swipe', {
+  const { data, error } = await supabase.rpc("handle_swipe", {
     p_target_profile_id: targetProfileId,
     p_direction: direction,
   });
@@ -555,7 +572,9 @@ export const handleSwipe = async (
     throw error;
   }
 
-  const row = Array.isArray(data) ? (data[0] as SwipeRpcRow) : (data as SwipeRpcRow);
+  const row = Array.isArray(data)
+    ? (data[0] as SwipeRpcRow)
+    : (data as SwipeRpcRow);
   return {
     matched: Boolean(row?.matched),
     matchId: row?.match_id ?? null,
@@ -576,7 +595,7 @@ export const requestMpesaCharge = async (
   const supabase = getSupabase();
 
   try {
-    const { data, error } = await supabase.functions.invoke('paystack-charge', {
+    const { data, error } = await supabase.functions.invoke("paystack-charge", {
       body: {
         phoneNumber,
         planId,
@@ -587,10 +606,10 @@ export const requestMpesaCharge = async (
       // supabase-js swallows the response body on non-2xx and reports a generic
       // "Edge Function returned a non-2xx status code". Read the body so the
       // user sees what actually went wrong.
-      let detail = '';
+      let detail = "";
       const response = (error as { context?: Response }).context;
-      if (response && typeof response.text === 'function') {
-        const raw = await response.text().catch(() => '');
+      if (response && typeof response.text === "function") {
+        const raw = await response.text().catch(() => "");
         try {
           const parsed = JSON.parse(raw);
           detail = parsed?.error || parsed?.message || raw;
@@ -598,24 +617,32 @@ export const requestMpesaCharge = async (
           detail = raw;
         }
       }
-      console.error('Paystack charge function invocation failed:', error, detail);
-      throw new Error(detail || error.message || 'Unable to start the M-Pesa payment request.');
+      console.error(
+        "Paystack charge function invocation failed:",
+        error,
+        detail,
+      );
+      throw new Error(
+        detail ||
+          error.message ||
+          "Unable to start the M-Pesa payment request.",
+      );
     }
 
     if (!data?.success || !data?.reference) {
-      throw new Error(data?.error || 'M-Pesa STK Push request failed.');
+      throw new Error(data?.error || "M-Pesa STK Push request failed.");
     }
 
     return {
       reference: data.reference as string,
       amount: Number(data.amount),
-      message: (data.message as string) ?? '',
+      message: (data.message as string) ?? "",
     };
   } catch (err) {
-    console.error('Paystack charge request failed:', err);
+    console.error("Paystack charge request failed:", err);
     throw err instanceof Error
       ? err
-      : new Error('Unable to start M-Pesa payment. Please try again.');
+      : new Error("Unable to start M-Pesa payment. Please try again.");
   }
 };
 
@@ -623,12 +650,14 @@ export const requestMpesaCharge = async (
  * Reads the payment row the webhook writes to. Premium itself is only ever
  * granted server-side by complete_payment(); this is a read-only poll.
  */
-export const getPaymentState = async (reference: string): Promise<PaymentState | null> => {
+export const getPaymentState = async (
+  reference: string,
+): Promise<PaymentState | null> => {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('payments')
-    .select('status')
-    .eq('reference', reference)
+    .from("payments")
+    .select("status")
+    .eq("reference", reference)
     .maybeSingle();
 
   if (error) {
@@ -654,10 +683,10 @@ type BoostPackRow = {
 export const fetchBoostPack = async (): Promise<BoostPackOption | null> => {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('pricing_plans')
-    .select('plan_id, label, price_ksh, boost_credits')
-    .eq('plan_id', 'boost_pack_2')
-    .eq('is_active', true)
+    .from("pricing_plans")
+    .select("plan_id, label, price_ksh, boost_credits")
+    .eq("plan_id", "boost_pack_2")
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) {
@@ -678,12 +707,13 @@ export const fetchBoostPack = async (): Promise<BoostPackOption | null> => {
   };
 };
 
-export type ActivateBoostOutcome = 'activated' | 'already_active' | 'no_credits';
+export type ActivateBoostOutcome =
+  "activated" | "already_active" | "no_credits";
 
 /** Redeems one purchased boost credit for 30 minutes of active boost. */
 export const activateBoostCredit = async (): Promise<ActivateBoostOutcome> => {
   const supabase = getSupabase();
-  const { data, error } = await supabase.rpc('activate_boost');
+  const { data, error } = await supabase.rpc("activate_boost");
 
   if (error) {
     throw error;
@@ -694,7 +724,7 @@ export const activateBoostCredit = async (): Promise<ActivateBoostOutcome> => {
 
 export const listMatches = async () => {
   const supabase = getSupabase();
-  const { data, error } = await supabase.rpc('get_matches');
+  const { data, error } = await supabase.rpc("get_matches");
 
   if (error) {
     throw error;
@@ -705,17 +735,20 @@ export const listMatches = async () => {
 
 export const MESSAGE_PAGE_SIZE = 40;
 
-const toMessage = (row: MatchMessageRow, currentProfileId: string): Message => ({
+const toMessage = (
+  row: MatchMessageRow,
+  currentProfileId: string,
+): Message => ({
   id: row.id,
   sender: row.is_system
-    ? 'system'
+    ? "system"
     : row.sender_profile_id === currentProfileId
-      ? 'me'
-      : 'partner',
+      ? "me"
+      : "partner",
   text: row.body,
   timestamp: new Date(row.created_at).getTime(),
   isSystem: row.is_system,
-  status: 'sent',
+  status: "sent",
 });
 
 /**
@@ -729,7 +762,7 @@ export const listMatchMessages = async (
   options: { limit?: number; before?: number; after?: number } = {},
 ) => {
   const supabase = getSupabase();
-  const { data, error } = await supabase.rpc('get_match_messages', {
+  const { data, error } = await supabase.rpc("get_match_messages", {
     p_match_id: matchId,
     p_limit: options.limit ?? MESSAGE_PAGE_SIZE,
     p_before: options.before ? new Date(options.before).toISOString() : null,
@@ -740,12 +773,16 @@ export const listMatchMessages = async (
     throw error;
   }
 
-  return (data as MatchMessageRow[]).map((row) => toMessage(row, currentProfileId));
+  return (data as MatchMessageRow[]).map((row) =>
+    toMessage(row, currentProfileId),
+  );
 };
 
 export const markMatchRead = async (matchId: string) => {
   const supabase = getSupabase();
-  const { error } = await supabase.rpc('mark_match_read', { p_match_id: matchId });
+  const { error } = await supabase.rpc("mark_match_read", {
+    p_match_id: matchId,
+  });
 
   if (error) {
     throw error;
@@ -759,7 +796,9 @@ export const markMatchRead = async (matchId: string) => {
  */
 export const acknowledgeBoundary = async (matchId: string) => {
   const supabase = getSupabase();
-  const { error } = await supabase.rpc('acknowledge_boundary', { p_match_id: matchId });
+  const { error } = await supabase.rpc("acknowledge_boundary", {
+    p_match_id: matchId,
+  });
 
   if (error) {
     throw error;
@@ -768,7 +807,7 @@ export const acknowledgeBoundary = async (matchId: string) => {
 
 export const sendMatchMessage = async (matchId: string, body: string) => {
   const supabase = getSupabase();
-  const { error } = await supabase.rpc('send_match_message', {
+  const { error } = await supabase.rpc("send_match_message", {
     p_match_id: matchId,
     p_body: body,
   });
@@ -780,7 +819,7 @@ export const sendMatchMessage = async (matchId: string, body: string) => {
 
 export const closeMatch = async (matchId: string, reason: string) => {
   const supabase = getSupabase();
-  const { error } = await supabase.rpc('close_match', {
+  const { error } = await supabase.rpc("close_match", {
     p_match_id: matchId,
     p_reason: reason,
   });
@@ -796,7 +835,10 @@ export const closeMatch = async (matchId: string, reason: string) => {
  * by "matches I belong to" in postgres_changes, so RLS does that server-side and
  * the burst of events it produces is debounced into a single refresh here.
  */
-export const subscribeToMatchChanges = (profileId: string, onChange: () => void) => {
+export const subscribeToMatchChanges = (
+  profileId: string,
+  onChange: () => void,
+) => {
   const supabase = getSupabase();
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -811,16 +853,30 @@ export const subscribeToMatchChanges = (profileId: string, onChange: () => void)
   const channel = supabase
     .channel(`matches-feed-${crypto.randomUUID()}`)
     .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'matches', filter: `profile_low_id=eq.${profileId}` },
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "matches",
+        filter: `profile_low_id=eq.${profileId}`,
+      },
       scheduleRefresh,
     )
     .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'matches', filter: `profile_high_id=eq.${profileId}` },
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "matches",
+        filter: `profile_high_id=eq.${profileId}`,
+      },
       scheduleRefresh,
     )
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, scheduleRefresh)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages" },
+      scheduleRefresh,
+    )
     .subscribe();
 
   return () => {
@@ -846,12 +902,19 @@ export const subscribeToMatchMessages = (
   const channel = supabase
     .channel(`match-${matchId}`)
     .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `match_id=eq.${matchId}`,
+      },
       (payload) => {
-        const row = payload.new as Partial<MatchMessageRow> & { match_id?: string };
+        const row = payload.new as Partial<MatchMessageRow> & {
+          match_id?: string;
+        };
 
-        if (!row?.id || !row.created_at || typeof row.body !== 'string') {
+        if (!row?.id || !row.created_at || typeof row.body !== "string") {
           return;
         }
 
@@ -859,7 +922,7 @@ export const subscribeToMatchMessages = (
           toMessage(
             {
               id: row.id,
-              sender_profile_id: row.sender_profile_id ?? '',
+              sender_profile_id: row.sender_profile_id ?? "",
               body: row.body,
               created_at: row.created_at,
               is_system: Boolean(row.is_system),
@@ -871,7 +934,7 @@ export const subscribeToMatchMessages = (
     )
     .subscribe((status) => {
       // A dropped socket can lose messages, so fill the gap on reconnect.
-      if (status === 'SUBSCRIBED') {
+      if (status === "SUBSCRIBED") {
         onResubscribe();
       }
     });
@@ -879,4 +942,106 @@ export const subscribeToMatchMessages = (
   return () => {
     void supabase.removeChannel(channel);
   };
+};
+
+export const requestPasswordReset = async (email: string) => {
+  const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/?recovery=1`,
+  });
+  if (error) throw error;
+};
+export const updatePassword = async (password: string) => {
+  const { error } = await getSupabase().auth.updateUser({ password });
+  if (error) throw error;
+};
+export const getPreferences = async (
+  profileId: string,
+): Promise<import("../types").MemberPreferences> => {
+  const { data, error } = await getSupabase()
+    .from("member_preferences")
+    .select("*")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (error) throw error;
+  return (
+    data ?? {
+      profile_id: profileId,
+      min_age: 18,
+      max_age: 100,
+      town: "",
+      intent: "",
+      core_value: "",
+      incognito: false,
+      notify_matches: true,
+      notify_messages: true,
+    }
+  );
+};
+export const savePreferences = async (
+  preferences: import("../types").MemberPreferences,
+) => {
+  const { error } = await getSupabase()
+    .from("member_preferences")
+    .upsert(preferences);
+  if (error) throw error;
+};
+export const saveProfileForLater = async (
+  profileId: string,
+  target: string,
+  saved: boolean,
+) => {
+  const query = saved
+    ? getSupabase()
+        .from("saved_profiles")
+        .upsert({ profile_id: profileId, target_profile_id: target })
+    : getSupabase()
+        .from("saved_profiles")
+        .delete()
+        .eq("profile_id", profileId)
+        .eq("target_profile_id", target);
+  const { error } = await query;
+  if (error) throw error;
+};
+export const listSavedIds = async (profileId: string): Promise<string[]> => {
+  const { data, error } = await getSupabase()
+    .from("saved_profiles")
+    .select("target_profile_id")
+    .eq("profile_id", profileId);
+  if (error) throw error;
+  return (data ?? []).map((row) => row.target_profile_id);
+};
+export const blockMember = async (target: string) => {
+  const { error } = await getSupabase().rpc("block_member", {
+    p_target: target,
+  });
+  if (error) throw error;
+};
+export const reportMember = async (target: string, reason: string) => {
+  const { error } = await getSupabase().rpc("report_member", {
+    p_target: target,
+    p_reason: reason,
+  });
+  if (error) throw error;
+};
+export const undoLastPass = async () => {
+  const { error } = await getSupabase().rpc("undo_last_pass");
+  if (error) throw error;
+};
+export const setDiscoveryPaused = async (
+  profileId: string,
+  paused: boolean,
+) => {
+  const { error } = await getSupabase()
+    .from("profiles")
+    .update({ discovery_paused: paused })
+    .eq("id", profileId);
+  if (error) throw error;
+};
+export const deleteMyAccount = async () => {
+  const { data, error } =
+    await getSupabase().functions.invoke("delete-account");
+  if (error) throw error;
+  if (!data?.success)
+    throw new Error(data?.error ?? "Unable to delete account.");
+  await getSupabase().auth.signOut({ scope: "local" });
 };

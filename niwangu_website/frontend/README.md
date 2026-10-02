@@ -6,12 +6,12 @@ This app uses Supabase for:
 - Postgres data
 - Storage uploads
 - Realtime chat refresh
-- M-Pesa payments through Paystack, via two edge functions
+- M-Pesa payments through Paystack, via edge functions
 
 ## Local setup
 
 1. Install dependencies:
-   `npm install`
+   `npm ci`
 2. Set Supabase variables in `frontend/.env.local`:
 
 ```env
@@ -88,6 +88,24 @@ money, and premium is still only activated by a real signed webhook.
 - Registration uses Supabase Auth email/password.
 - If your Supabase project requires email confirmation, new users will be sent
   back to the sign-in screen until they confirm their email.
-- Other members' profiles are readable only through `get_gallery_profiles()` and
-  `get_matches()`, which meter the free daily view limit. Querying the `profiles`
+- Other members' profiles are readable only through `get_discovery_profiles()` and
+  `get_matches()`, which enforce discovery availability while matched chat remains free. Querying the `profiles`
   table directly returns your own row and nothing else.
+
+## Development member experience
+
+See [the review walkthrough](../DEVELOPMENT_REVIEW.md) for agreed behaviour and
+acceptance checks. The matching, quota, safety, and premium backend migrations
+must be installed together before using this frontend against a staging project.
+
+Free members use Focus with ten Like/Pass decisions per Kenya calendar day.
+Focus advances only after a successful decision; bookmarking does not advance it.
+Discover is visible to everyone: free members see decorative blurred silhouettes
+and an upgrade button; Premium unlocks actual profiles, Likes, advanced filters,
+Undo, incognito, and included boosts. The locked preview requests no member data.
+Bookmarks stay private. Chat with mutual matches stays free.
+The rose glass interface respects reduced motion and keeps failed decisions in place.
+
+Configure the app URL and password-recovery redirect in Supabase Auth. Assign a
+trusted moderator through Auth app_metadata to operate the report queue. Browser
+notifications require permission and the app to be open; offline push is not included.

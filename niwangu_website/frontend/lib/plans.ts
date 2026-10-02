@@ -13,51 +13,29 @@ const PLAN_PRESENTATION: Record<PaidPricingPlan, Omit<PricingPlanOption, 'id' | 
   '7_days': {
     group: 'standard',
     period: '/ 7 days',
-    description: 'Low-friction entry to test Premium features.',
+    description: 'Explore Premium for seven days.',
     badge: 'Trial',
-    features: [
-      'Unlimited profile views',
-      'Full Parlor chat access',
-      'Instant M-Pesa STK push',
-      'No auto-renewal commitment',
-    ],
+    features: ['Unlimited Like/Pass decisions', 'See who liked you', 'Advanced compatibility filters', 'Undo your last pass', 'Incognito browsing', 'Included 30-minute boosts', 'Free chat with mutual matches', 'No automatic renewal'],
   },
   '30_days': {
     group: 'standard',
     period: '/ month',
-    description: 'Recommended impulse entry point for members.',
+    description: 'More ways to meet people, for a full month.',
     badge: 'Most Popular',
     isPopular: true,
-    features: [
-      'Everything in the 7-Day Trial',
-      '30 full days of Premium access',
-      'Priority matching algorithm',
-      'Unlimited Parlor messaging',
-      'Direct profile messaging',
-    ],
+    features: ['Unlimited Like/Pass decisions', 'See who liked you', 'Advanced compatibility filters', 'Undo your last pass', 'Incognito browsing', 'Included 30-minute boosts', 'Free chat with mutual matches', 'No automatic renewal'],
   },
   '90_days': {
     group: 'long_term',
     period: '/ 3 months',
     description: 'Quarterly access for intentional matching.',
-    features: [
-      'Everything in the 30-Day Pass',
-      'Better value than paying monthly',
-      'Exclusive intentional badge',
-      'Continuous match updates',
-      'Priority support',
-    ],
+    features: ['Unlimited Like/Pass decisions', 'See who liked you', 'Advanced compatibility filters', 'Undo your last pass', 'Incognito browsing', 'Included 30-minute boosts', 'Free chat with mutual matches', 'No automatic renewal'],
   },
   '180_days': {
     group: 'long_term',
     period: '/ 6 months',
     description: 'Half a year of uninterrupted access.',
-    features: [
-      'Everything in the 90-Day Pass',
-      'Six months of unlimited swiping',
-      'Exclusive intentional badge',
-      'Priority support',
-    ],
+    features: ['Unlimited Like/Pass decisions', 'See who liked you', 'Advanced compatibility filters', 'Undo your last pass', 'Incognito browsing', 'Included 30-minute boosts', 'Free chat with mutual matches', 'No automatic renewal'],
   },
   '365_days': {
     group: 'long_term',
@@ -65,13 +43,7 @@ const PLAN_PRESENTATION: Record<PaidPricingPlan, Omit<PricingPlanOption, 'id' | 
     description: 'Maximum savings & long-term connection.',
     badge: 'Best Value',
     isDark: true,
-    features: [
-      'Everything in the 180-Day Pass',
-      'Full year of unlimited swiping',
-      'Best value per month',
-      'VIP profile placement',
-      'Priority support',
-    ],
+    features: ['Unlimited Like/Pass decisions', 'See who liked you', 'Advanced compatibility filters', 'Undo your last pass', 'Incognito browsing', 'Included 30-minute boosts', 'Free chat with mutual matches', 'No automatic renewal'],
   },
 };
 

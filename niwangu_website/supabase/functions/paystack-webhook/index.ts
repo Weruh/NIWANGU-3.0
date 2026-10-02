@@ -1,4 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2.112.0";
 
 // Paystack calls this endpoint server-to-server, so it cannot present a JWT.
 // Three things stand in for that:
@@ -74,7 +74,7 @@ const verifyWithPaystack = async (reference: string, secretKey: string): Promise
 
     const data = body.data;
 
-    if (data.status === "success") {
+    if (data.status === "success" && data.currency === "KES" && data.reference === reference) {
       return {
         outcome: "confirmed",
         // Paystack reports in subunits; the RPC compares against price_ksh.
@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
 
         if (error) {
           console.error("fail_payment failed", error);
+          return new Response(JSON.stringify({error:"Could not record payment failure"}),{status:500,headers:jsonHeaders});
         } else {
           console.log("Recorded failed payment", { reference, outcome: data });
         }
@@ -177,29 +178,19 @@ Deno.serve(async (req) => {
     const verification = await verifyWithPaystack(reference, secretKey);
 
     if (verification.outcome === "rejected") {
-      await supabase.rpc("fail_payment", {
+      const {error}=await supabase.rpc("fail_payment", {
         p_reference: reference,
         p_result_desc: verification.reason,
       });
+      if(error)return new Response(JSON.stringify({error:"Could not record rejected payment"}),{status:500,headers:jsonHeaders});
 
       return acknowledge();
     }
 
-    // Fall back to the signed payload when Paystack cannot be reached. The
-    // signature still gates this path, and complete_payment verifies the amount.
-    let paidKsh: number | null;
-    let receipt: string | null;
-    let transactionId: string | null;
-
-    if (verification.outcome === "confirmed") {
-      ({ paidKsh, receipt, transactionId } = verification);
-    } else {
-      console.warn("Activating without a Paystack verification", { reference });
-      const rawAmount = Number(body?.data?.amount);
-      paidKsh = Number.isFinite(rawAmount) ? rawAmount / 100 : null;
-      receipt = body?.data?.receipt_number ? String(body.data.receipt_number) : null;
-      transactionId = body?.data?.id != null ? String(body.data.id) : null;
+    if (verification.outcome === 'unavailable') {
+      return new Response(JSON.stringify({error:'Provider verification unavailable; retry required'}), {status:503,headers:jsonHeaders});
     }
+    const {paidKsh,receipt,transactionId} = verification;
 
     const { data, error } = await supabase.rpc("complete_payment", {
       p_reference: reference,

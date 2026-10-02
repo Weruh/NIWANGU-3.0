@@ -44,11 +44,7 @@ export const ProfileMenu: FC<{
 
   const handleChatsClick = () => {
     setOpen(false);
-    if (paymentRequired && !isPremium && onOpenPaywall) {
-      onOpenPaywall();
-    } else {
-      setView("parlor");
-    }
+    setView("parlor");
   };
 
   const handleSubscriptionClick = () => {
@@ -115,7 +111,7 @@ export const ProfileMenu: FC<{
                 <span>Subscription</span>
               </div>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isPremium ? 'bg-emerald-100 text-emerald-800' : 'bg-midnight/10 text-midnight/80'}`}>
-                {isPremium ? 'Active' : `${remainingViews} views left`}
+                {isPremium ? 'Active' : `${remainingViews} decisions left`}
               </span>
             </button>
           </div>

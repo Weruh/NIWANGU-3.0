@@ -7,36 +7,46 @@ import {
   type FC,
   type FormEvent,
   type KeyboardEvent,
-} from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useShallow } from 'zustand/react/shallow';
-import { useSanctuaryStore } from '../store';
-import { ArrowLeft, Send, Sprout, Flower, XCircle, RotateCw, ShieldCheck } from 'lucide-react';
-import { ChatSession, Message } from '../types';
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useShallow } from "zustand/react/shallow";
+import { useSanctuaryStore } from "../store";
+import {
+  ArrowLeft,
+  Send,
+  Sprout,
+  Flower,
+  XCircle,
+  RotateCw,
+  ShieldCheck,
+} from "lucide-react";
+import { ChatSession, Message } from "../types";
 import {
   MESSAGE_PAGE_SIZE,
   listMatchMessages,
   subscribeToMatchChanges,
   subscribeToMatchMessages,
-} from '../lib/api';
-import { ProfileMenu } from './ProfileMenu';
-import { OptimizedImage } from './OptimizedImage';
-import { Modal } from './Modal';
+} from "../lib/api";
+import { ProfileMenu } from "./ProfileMenu";
+import { OptimizedImage } from "./OptimizedImage";
+import { MemberSafety } from "./MemberSafety";
+import { Modal } from "./Modal";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, {
-  hour: 'numeric',
-  minute: '2-digit',
+  hour: "numeric",
+  minute: "2-digit",
 });
 
 const dayFormatter = new Intl.DateTimeFormat(undefined, {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
+  weekday: "long",
+  day: "numeric",
+  month: "long",
 });
 
-const startOfDay = (timestamp: number) => new Date(timestamp).setHours(0, 0, 0, 0);
+const startOfDay = (timestamp: number) =>
+  new Date(timestamp).setHours(0, 0, 0, 0);
 
 const formatDayLabel = (timestamp: number) => {
   const today = startOfDay(Date.now());
@@ -44,11 +54,11 @@ const formatDayLabel = (timestamp: number) => {
   const dayInMs = 86_400_000;
 
   if (day === today) {
-    return 'Today';
+    return "Today";
   }
 
   if (day === today - dayInMs) {
-    return 'Yesterday';
+    return "Yesterday";
   }
 
   return dayFormatter.format(timestamp);
@@ -56,13 +66,13 @@ const formatDayLabel = (timestamp: number) => {
 
 const formatListTimestamp = (isoDate?: string | null) => {
   if (!isoDate) {
-    return '';
+    return "";
   }
 
   const timestamp = new Date(isoDate).getTime();
 
   if (Number.isNaN(timestamp)) {
-    return '';
+    return "";
   }
 
   return startOfDay(timestamp) === startOfDay(Date.now())
@@ -86,58 +96,47 @@ export const TheParlor: FC = () => {
     activeChats,
     chatsLoading,
     currentProfile,
-    paymentRequired,
-    isPremium,
     loadChats,
     markChatRead,
     sendMessage,
     closeConnection,
     acknowledgeBoundaryFor,
     setView,
-  } = useSanctuaryStore(useShallow((state) => ({
-    activeChats: state.activeChats,
-    chatsLoading: state.chatsLoading,
-    currentProfile: state.currentProfile,
-    paymentRequired: state.paymentRequired,
-    isPremium: state.isPremium,
-    loadChats: state.loadChats,
-    markChatRead: state.markChatRead,
-    sendMessage: state.sendMessage,
-    closeConnection: state.closeConnection,
-    acknowledgeBoundaryFor: state.acknowledgeBoundaryFor,
-    setView: state.setView,
-  })));
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  } = useSanctuaryStore(
+    useShallow((state) => ({
+      activeChats: state.activeChats,
+      chatsLoading: state.chatsLoading,
+      currentProfile: state.currentProfile,
+      loadChats: state.loadChats,
+      markChatRead: state.markChatRead,
+      sendMessage: state.sendMessage,
+      closeConnection: state.closeConnection,
+      acknowledgeBoundaryFor: state.acknowledgeBoundaryFor,
+      setView: state.setView,
+    })),
+  );
+  const selectedChatId = useSanctuaryStore((s) => s.selectedChatId);
+  const setSelectedChatId = (id: string | null) =>
+    useSanctuaryStore.setState({ selectedChatId: id });
 
-  const paywalled = paymentRequired && !isPremium;
   const profileId = currentProfile?.id ?? null;
 
   useEffect(() => {
-    if (paywalled) {
-      return;
-    }
-
     void loadChats();
-  }, [loadChats, paywalled]);
+  }, [loadChats]);
 
   useEffect(() => {
-    if (paywalled || !profileId) {
+    if (!profileId) {
       return undefined;
     }
 
     return subscribeToMatchChanges(profileId, () => {
       void loadChats();
     });
-  }, [loadChats, paywalled, profileId]);
+  }, [loadChats, profileId]);
 
-  // Redirecting during render warned about updating another component mid-render.
-  useEffect(() => {
-    if (paywalled) {
-      setView('pricing');
-    }
-  }, [paywalled, setView]);
-
-  const selectedChat = activeChats.find((chat) => chat.id === selectedChatId) ?? null;
+  const selectedChat =
+    activeChats.find((chat) => chat.id === selectedChatId) ?? null;
 
   // Stable identity, so the "mark as read" effect in ChatWindow does not refire
   // on every parent render.
@@ -147,19 +146,15 @@ export const TheParlor: FC = () => {
     }
   }, [markChatRead, selectedChatId]);
 
-  if (paywalled) {
-    return null;
-  }
-
   return (
-    <div className="flex h-dvh flex-col bg-sandstone">
+    <div className="flex h-full min-h-0 flex-col bg-sandstone">
       <AnimatePresence mode="wait">
         {!selectedChatId ? (
           <ChatList
             chats={activeChats}
             loading={chatsLoading}
             onSelect={setSelectedChatId}
-            onBack={() => setView('gallery')}
+            onBack={() => setView("gallery")}
           />
         ) : selectedChat && currentProfile ? (
           <ChatWindow
@@ -169,7 +164,9 @@ export const TheParlor: FC = () => {
             onBack={() => setSelectedChatId(null)}
             onSend={(text) => sendMessage(selectedChat.id, text)}
             onClose={(reason) => closeConnection(selectedChat.id, reason)}
-            onAcknowledgeBoundary={() => acknowledgeBoundaryFor(selectedChat.id)}
+            onAcknowledgeBoundary={() =>
+              acknowledgeBoundaryFor(selectedChat.id)
+            }
             onRead={handleRead}
           />
         ) : (
@@ -198,7 +195,7 @@ const ChatList: FC<{
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex-1 overflow-y-auto p-6"
+      className="mx-auto w-full max-w-4xl flex-1 overflow-y-auto p-6 sm:p-10"
     >
       <div className="mb-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -210,14 +207,14 @@ const ChatList: FC<{
           >
             <ArrowLeft className="text-midnight" aria-hidden="true" />
           </button>
-          <h2 className="font-serif text-3xl text-midnight">Chats</h2>
+          <h2 className="font-serif text-3xl text-midnight">Messages</h2>
         </div>
         <ProfileMenu />
       </div>
 
       {loading && chats.length === 0 ? (
         <div className="mt-20 text-center text-midnight/80">
-          <p>Loading intentional conversations...</p>
+          <p>Loading…</p>
         </div>
       ) : (
         <ul className="space-y-4">
@@ -237,8 +234,8 @@ const ChatList: FC<{
                   }
                   className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight ${
                     chat.isClosed
-                      ? 'cursor-not-allowed border-gray-200 bg-gray-100 opacity-70'
-                      : 'border-white/40 bg-white/50 hover:border-sage'
+                      ? "cursor-not-allowed border-gray-200 bg-gray-100 opacity-70"
+                      : "luxury-panel hover:border-sage"
                   }`}
                 >
                   <OptimizedImage
@@ -253,10 +250,14 @@ const ChatList: FC<{
                   />
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center justify-between gap-2">
-                      <h3 className="truncate font-serif text-lg text-midnight">{chat.partnerName}</h3>
+                      <h3 className="truncate font-serif text-lg text-midnight">
+                        {chat.partnerName}
+                      </h3>
                       <div className="flex shrink-0 items-center gap-2">
                         {timestamp && (
-                          <span className="text-[11px] text-midnight/80">{timestamp}</span>
+                          <span className="text-[11px] text-midnight/80">
+                            {timestamp}
+                          </span>
                         )}
                         {chat.isClosed && (
                           <span className="rounded bg-gray-200 px-2 py-0.5 text-[10px] uppercase text-gray-700">
@@ -268,20 +269,26 @@ const ChatList: FC<{
                     <div className="flex items-center justify-between gap-2">
                       <p
                         className={`line-clamp-1 text-sm ${
-                          chat.unreadCount > 0 ? 'font-semibold text-midnight' : 'text-midnight/80'
+                          chat.unreadCount > 0
+                            ? "font-semibold text-midnight"
+                            : "text-midnight/80"
                         }`}
                       >
-                        {chat.lastMessage || 'Start the conversation...'}
+                        {chat.lastMessage || "Start the conversation..."}
                       </p>
                       {chat.unreadCount > 0 && (
                         <span className="min-w-5 shrink-0 rounded-full bg-sageDeep px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
-                          {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+                          {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="shrink-0 text-sageDeep" aria-hidden="true">
-                    {chat.gardenLevel > 4 ? <Flower className="h-5 w-5" /> : <Sprout className="h-5 w-5" />}
+                    {chat.gardenLevel > 4 ? (
+                      <Flower className="h-5 w-5" />
+                    ) : (
+                      <Sprout className="h-5 w-5" />
+                    )}
                   </div>
                 </button>
               </li>
@@ -291,7 +298,7 @@ const ChatList: FC<{
           {chats.length === 0 && !loading && (
             <li className="mt-20 text-center text-midnight/80">
               <p>Chat is quiet.</p>
-              <p className="text-sm">Return to the gallery to find connection.</p>
+              <p className="text-sm">A mutual like starts a conversation.</p>
             </li>
           )}
         </ul>
@@ -308,8 +315,25 @@ const ChatWindow: FC<{
   onClose: (reason: string) => Promise<void>;
   onAcknowledgeBoundary: () => Promise<void>;
   onRead: () => void;
-}> = ({ chat, currentProfileId, onBack, onSend, onClose, onAcknowledgeBoundary, onRead }) => {
-  const [inputText, setInputText] = useState('');
+}> = ({
+  chat,
+  currentProfileId,
+  onBack,
+  onSend,
+  onClose,
+  onAcknowledgeBoundary,
+  onRead,
+}) => {
+  const draftKey = `niwangu-draft-${currentProfileId}-${chat.id}`;
+  const [inputText, setInputText] = useState(
+    () => sessionStorage.getItem(draftKey) ?? "",
+  );
+  useEffect(() => {
+    if (inputText) sessionStorage.setItem(draftKey, inputText);
+    else sessionStorage.removeItem(draftKey);
+  }, [draftKey, inputText]);
+  const [newMessages, setNewMessages] = useState(false);
+  const [messageError, setMessageError] = useState("");
   const [acknowledging, setAcknowledging] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
@@ -330,7 +354,8 @@ const ChatWindow: FC<{
 
     if (container) {
       pinnedToBottom.current =
-        container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        80;
     }
   };
 
@@ -338,7 +363,8 @@ const ChatWindow: FC<{
   // newest cursor without resubscribing on every message.
   const latestTimestamp = useRef(0);
   latestTimestamp.current = messages.reduce(
-    (newest, message) => (message.status === 'sent' ? Math.max(newest, message.timestamp) : newest),
+    (newest, message) =>
+      message.status === "sent" ? Math.max(newest, message.timestamp) : newest,
     0,
   );
 
@@ -367,6 +393,9 @@ const ChatWindow: FC<{
       .catch(() => {
         if (!cancelled) {
           setMessages([]);
+          setMessageError(
+            "Messages could not load. Return to the inbox and retry.",
+          );
         }
       })
       .finally(() => {
@@ -385,13 +414,15 @@ const ChatWindow: FC<{
       chat.id,
       currentProfileId,
       (message) => {
+        if (!pinnedToBottom.current) setNewMessages(true);
         setMessages((current) => {
           // The stored row may echo back before the send resolves; drop the
           // matching placeholder so the bubble does not appear twice.
           const withoutPlaceholder =
-            message.sender === 'me'
+            message.sender === "me"
               ? current.filter(
-                  (item) => !(item.status === 'sending' && item.text === message.text),
+                  (item) =>
+                    !(item.status === "sending" && item.text === message.text),
                 )
               : current;
 
@@ -404,7 +435,9 @@ const ChatWindow: FC<{
           return;
         }
 
-        void listMatchMessages(chat.id, currentProfileId, { after: latestTimestamp.current })
+        void listMatchMessages(chat.id, currentProfileId, {
+          after: latestTimestamp.current,
+        })
           .then(appendMessages)
           .catch(() => undefined);
       },
@@ -413,7 +446,7 @@ const ChatWindow: FC<{
 
   // Opening the thread, and anything arriving while it is open, counts as read.
   useEffect(() => {
-    if (!loadingMessages) {
+    if (!loadingMessages && pinnedToBottom.current) {
       onRead();
     }
   }, [loadingMessages, messages.length, onRead]);
@@ -427,7 +460,8 @@ const ChatWindow: FC<{
 
     // Prepending history would otherwise yank the viewport to the top.
     if (pendingScrollRestore.current !== null) {
-      container.scrollTop = container.scrollHeight - pendingScrollRestore.current;
+      container.scrollTop =
+        container.scrollHeight - pendingScrollRestore.current;
       pendingScrollRestore.current = null;
       return;
     }
@@ -443,12 +477,15 @@ const ChatWindow: FC<{
     }
 
     if (pinnedToBottom.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
     }
   }, [loadingMessages, messages]);
 
   const loadOlderMessages = async () => {
-    const oldest = messages.find((message) => message.status === 'sent');
+    const oldest = messages.find((message) => message.status === "sent");
 
     if (!oldest || loadingOlder) {
       return;
@@ -477,12 +514,33 @@ const ChatWindow: FC<{
 
     try {
       await onSend(text);
-      // The realtime insert delivers the stored row; drop the placeholder.
-      setMessages((current) => current.filter((message) => message.id !== optimisticId));
+      // Read back after acceptance as well as realtime: a dropped socket must not hide a sent message.
+      try {
+        const confirmed = await listMatchMessages(chat.id, currentProfileId, {
+          limit: MESSAGE_PAGE_SIZE,
+        });
+        setMessages((current) =>
+          mergeMessages(
+            current.filter((message) => message.id !== optimisticId),
+            confirmed,
+          ),
+        );
+      } catch {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === optimisticId
+              ? { ...message, status: "sent" }
+              : message,
+          ),
+        );
+      }
     } catch {
+      setInputText((current) => current || text);
       setMessages((current) =>
         current.map((message) =>
-          message.id === optimisticId ? { ...message, status: 'failed' } : message,
+          message.id === optimisticId
+            ? { ...message, status: "failed" }
+            : message,
         ),
       );
     } finally {
@@ -504,16 +562,25 @@ const ChatWindow: FC<{
     // Show the bubble immediately, and only clear the box once it is queued.
     setMessages((current) => [
       ...current,
-      { id: optimisticId, sender: 'me', text, timestamp: Date.now(), status: 'sending' },
+      {
+        id: optimisticId,
+        sender: "me",
+        text,
+        timestamp: Date.now(),
+        status: "sending",
+      },
     ]);
-    setInputText('');
+    setInputText("");
 
     await deliver(text, optimisticId);
   };
 
   const retryMessage = async (message: Message) => {
+    if (inputText === message.text) setInputText("");
     setMessages((current) =>
-      current.map((item) => (item.id === message.id ? { ...item, status: 'sending' } : item)),
+      current.map((item) =>
+        item.id === message.id ? { ...item, status: "sending" } : item,
+      ),
     );
 
     await deliver(message.text, message.id);
@@ -521,7 +588,7 @@ const ChatWindow: FC<{
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter sends; Shift+Enter starts a new line.
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       void handleSend();
     }
@@ -557,7 +624,9 @@ const ChatWindow: FC<{
             className="h-8 w-8 shrink-0 rounded-full object-cover"
           />
           <div className="min-w-0">
-            <h3 className="truncate font-serif leading-none text-midnight">{chat.partnerName}</h3>
+            <h3 className="truncate font-serif leading-none text-midnight">
+              {chat.partnerName}
+            </h3>
             <div className="mt-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wider text-midnight/80">
               <Sprout className="h-3 w-3 text-sageDeep" aria-hidden="true" />
               <span>Level {Math.floor(chat.gardenLevel)} Connection</span>
@@ -576,8 +645,8 @@ const ChatWindow: FC<{
 
       <div className="border-b border-sage/20 bg-sage/10 px-4 py-2 text-center">
         <p className="text-xs text-midnight/80">
-          <span className="font-bold">Shared Ground:</span>{' '}
-          {chat.valuesOverlap.join(' • ') || 'Intentional connection'}
+          <span className="font-bold">Shared Ground:</span>{" "}
+          {chat.valuesOverlap.join(" • ") || "Intentional connection"}
         </p>
       </div>
 
@@ -590,7 +659,9 @@ const ChatWindow: FC<{
         className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-white/30 p-4"
       >
         {loadingMessages ? (
-          <p className="py-12 text-center text-sm text-midnight/80">Loading messages...</p>
+          <p className="py-12 text-center text-sm text-midnight/80">
+            Loading messages...
+          </p>
         ) : (
           <>
             {hasMore && (
@@ -601,7 +672,7 @@ const ChatWindow: FC<{
                   disabled={loadingOlder}
                   className="rounded-full border border-midnight/20 px-4 py-1.5 text-xs text-midnight/80 transition-colors hover:bg-white disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight"
                 >
-                  {loadingOlder ? 'Loading...' : 'Load earlier messages'}
+                  {loadingOlder ? "Loading..." : "Load earlier messages"}
                 </button>
               </div>
             )}
@@ -631,33 +702,37 @@ const ChatWindow: FC<{
 
                   <div
                     className={`flex ${
-                      message.sender === 'me'
-                        ? 'justify-end'
-                        : message.sender === 'system'
-                          ? 'justify-center'
-                          : 'justify-start'
+                      message.sender === "me"
+                        ? "justify-end"
+                        : message.sender === "system"
+                          ? "justify-center"
+                          : "justify-start"
                     }`}
                   >
                     <div className="max-w-[80%]">
                       <div
                         className={`rounded-2xl px-4 py-2 text-sm ${
-                          message.sender === 'me'
-                            ? `rounded-br-none bg-sageDeep text-white ${message.status !== 'sent' ? 'opacity-70' : ''}`
-                            : message.sender === 'system'
-                              ? 'bg-midnight/10 italic text-midnight/80'
-                              : 'rounded-bl-none border border-midnight/10 bg-white text-midnight'
+                          message.sender === "me"
+                            ? `rounded-br-none bg-sageDeep text-white ${message.status !== "sent" ? "opacity-70" : ""}`
+                            : message.sender === "system"
+                              ? "bg-midnight/10 italic text-midnight/80"
+                              : "rounded-bl-none border border-midnight/10 bg-white text-midnight"
                         }`}
                       >
-                        <span className="whitespace-pre-wrap break-words">{message.text}</span>
+                        <span className="whitespace-pre-wrap break-words">
+                          {message.text}
+                        </span>
                       </div>
 
-                      {message.sender !== 'system' && (
+                      {message.sender !== "system" && (
                         <div
                           className={`mt-1 flex items-center gap-2 px-1 text-[10px] text-midnight/80 ${
-                            message.sender === 'me' ? 'justify-end' : 'justify-start'
+                            message.sender === "me"
+                              ? "justify-end"
+                              : "justify-start"
                           }`}
                         >
-                          {message.status === 'failed' ? (
+                          {message.status === "failed" ? (
                             <>
                               <span className="text-red-800">Not sent</span>
                               <button
@@ -665,14 +740,21 @@ const ChatWindow: FC<{
                                 onClick={() => void retryMessage(message)}
                                 className="inline-flex items-center gap-1 text-midnight underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight"
                               >
-                                <RotateCw className="h-3 w-3" aria-hidden="true" />
+                                <RotateCw
+                                  className="h-3 w-3"
+                                  aria-hidden="true"
+                                />
                                 Retry
                               </button>
                             </>
                           ) : (
-                            <time dateTime={new Date(message.timestamp).toISOString()}>
-                              {message.status === 'sending'
-                                ? 'Sending...'
+                            <time
+                              dateTime={new Date(
+                                message.timestamp,
+                              ).toISOString()}
+                            >
+                              {message.status === "sending"
+                                ? "Sending..."
                                 : timeFormatter.format(message.timestamp)}
                             </time>
                           )}
@@ -694,6 +776,54 @@ const ChatWindow: FC<{
         <div ref={messagesEndRef} />
       </div>
 
+      <div className="flex items-center justify-between px-4 py-1">
+        <MemberSafety
+          target={chat.partnerId}
+          name={chat.partnerName}
+          onBlocked={onBack}
+        />
+        {newMessages && (
+          <button
+            type="button"
+            className="min-h-11 text-sm text-sageDeep"
+            onClick={() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+              pinnedToBottom.current = true;
+              setNewMessages(false);
+              onRead();
+            }}
+          >
+            New messages ↓
+          </button>
+        )}
+      </div>
+      {messageError && (
+        <p role="alert" className="px-4 py-2 text-sm text-red-800">
+          {messageError}
+        </p>
+      )}
+      {!chat.isClosed && messages.length === 0 && chat.boundaryAcknowledged && (
+        <div className="px-4 py-2">
+          <p className="mb-2 text-xs text-midnight/60">
+            A thoughtful place to start
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              setInputText(
+                chat.valuesOverlap.length
+                  ? `I noticed we share something: ${chat.valuesOverlap[0]}. What does that look like in your life?`
+                  : "What would a meaningful connection look like for you?",
+              )
+            }
+            className="rounded-xl bg-sage/10 p-3 text-left text-sm text-sageDeep"
+          >
+            {chat.valuesOverlap.length
+              ? "Ask about a shared value"
+              : "Ask about their intention"}
+          </button>
+        </div>
+      )}
       {/* Their stated boundary has to be read before the first message. The
           server enforces this too; this panel is what makes it feel intentional
           rather than like an error. */}
@@ -701,61 +831,68 @@ const ChatWindow: FC<{
         <div className="border-t border-midnight/10 bg-sandstone p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-md">
             <h3 className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-widest text-midnight/70">
-              <ShieldCheck className="h-3.5 w-3.5 text-sage" aria-hidden="true" />
+              <ShieldCheck
+                className="h-3.5 w-3.5 text-sage"
+                aria-hidden="true"
+              />
               {chat.partnerName}'s boundary
             </h3>
             <p className="mb-4 border-l-2 border-sage pl-4 font-serif text-lg italic leading-relaxed text-midnight">
               "{chat.partnerBoundary}"
             </p>
             <p className="mb-4 text-sm text-midnight/80">
-              Read this before you write. Acknowledging it opens the conversation.
+              Read this before you write. Acknowledging it opens the
+              conversation.
             </p>
             <button
               type="button"
               disabled={acknowledging}
               onClick={() => {
                 setAcknowledging(true);
-                void onAcknowledgeBoundary().finally(() => setAcknowledging(false));
+                void onAcknowledgeBoundary().finally(() =>
+                  setAcknowledging(false),
+                );
               }}
               className="w-full rounded-xl bg-midnight px-4 py-3 text-sm font-medium text-sandstone transition-colors hover:bg-midnight/90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight"
             >
-              {acknowledging ? 'Recording...' : 'I have read this. Continue'}
+              {acknowledging ? "Recording..." : "I have read this. Continue"}
             </button>
           </div>
         </div>
       )}
 
-      {!chat.isClosed && (!chat.partnerBoundary || chat.boundaryAcknowledged) && (
-        <form
-          onSubmit={(event) => {
-            void handleSend(event);
-          }}
-          className="flex items-end gap-2 border-t border-midnight/10 bg-sandstone p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
-        >
-          <label htmlFor="message-input" className="sr-only">
-            Message {chat.partnerName}
-          </label>
-          <textarea
-            id="message-input"
-            rows={1}
-            value={inputText}
-            maxLength={MAX_MESSAGE_LENGTH}
-            onChange={(event) => setInputText(event.target.value)}
-            onKeyDown={handleKeyDown}
-            enterKeyHint="send"
-            placeholder="Message with intention..."
-            className="max-h-32 flex-1 resize-none rounded-2xl border border-midnight/10 bg-white/50 px-4 py-2 text-sm text-midnight focus:border-sage focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={!inputText.trim() || sending}
-            aria-label="Send message"
-            className="rounded-full bg-midnight p-2 text-sandstone transition-colors hover:bg-midnight/90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight"
+      {!chat.isClosed &&
+        (!chat.partnerBoundary || chat.boundaryAcknowledged) && (
+          <form
+            onSubmit={(event) => {
+              void handleSend(event);
+            }}
+            className="flex items-end gap-2 border-t border-midnight/10 bg-sandstone p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
           >
-            <Send className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </form>
-      )}
+            <label htmlFor="message-input" className="sr-only">
+              Message {chat.partnerName}
+            </label>
+            <textarea
+              id="message-input"
+              rows={1}
+              value={inputText}
+              maxLength={MAX_MESSAGE_LENGTH}
+              onChange={(event) => setInputText(event.target.value)}
+              onKeyDown={handleKeyDown}
+              enterKeyHint="send"
+              placeholder="Message with intention..."
+              className="max-h-32 flex-1 resize-none rounded-2xl border border-midnight/10 bg-white/65 backdrop-blur-xl px-4 py-2 text-sm text-midnight focus:border-sage focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!inputText.trim() || sending}
+              aria-label="Send message"
+              className="rounded-full bg-midnight p-2 text-sandstone transition-colors hover:bg-midnight/90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight"
+            >
+              <Send className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </form>
+        )}
 
       <AnimatePresence>
         {showCloseDialog && (
@@ -769,14 +906,15 @@ const ChatWindow: FC<{
               Respectful Exit
             </h3>
             <p className="mb-4 text-sm text-midnight/80">
-              Ghosting is not permitted here. Please select a reason to close this connection politely.
+              Ghosting is not permitted here. Please select a reason to close
+              this connection politely.
             </p>
             <div className="mb-4 space-y-2">
               {[
-                'I feel our values do not align.',
-                'I have found a connection elsewhere.',
-                'I need to focus on myself right now.',
-                'I did not feel a spark.',
+                "I feel our values do not align.",
+                "I have found a connection elsewhere.",
+                "I need to focus on myself right now.",
+                "I did not feel a spark.",
               ].map((reason) => (
                 <button
                   key={reason}

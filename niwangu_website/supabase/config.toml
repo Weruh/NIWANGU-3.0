@@ -12,3 +12,7 @@ verify_jwt = true
 [functions.paystack-webhook]
 enabled = true
 verify_jwt = false
+
+[functions.delete-account]
+enabled = true
+verify_jwt = true

@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+import { errorMessage as describeError } from "./lib/errors";
+import { create } from "zustand";
 import {
   activateBoostCredit,
   closeMatch,
@@ -25,28 +26,42 @@ import {
   updateMyProfile,
   uploadProfilePhoto,
   deleteProfilePhoto,
-} from './lib/api';
-import { fetchPricingPlans } from './lib/plans';
-import { isSupabaseConfigured } from './lib/supabase';
-import { BoostPackOption, CurrentUserProfile, Gender, PaidPricingPlan, PricingPlanOption, ProfilePhoto, ProfileUpdateInput, PurchasableSkuId, SignUpInput, SwipeDirection, UserProfile, ViewState, ChatSession } from './types';
+} from "./lib/api";
+import { fetchPricingPlans } from "./lib/plans";
+import { isSupabaseConfigured } from "./lib/supabase";
+import {
+  BoostPackOption,
+  CurrentUserProfile,
+  Gender,
+  PaidPricingPlan,
+  PricingPlanOption,
+  ProfilePhoto,
+  ProfileUpdateInput,
+  PurchasableSkuId,
+  SignUpInput,
+  SwipeDirection,
+  UserProfile,
+  ViewState,
+  ChatSession,
+} from "./types";
 
 const resolveAuthenticatedView = (
   profile: CurrentUserProfile,
   photoCount: number,
 ): ViewState => {
   if (!profile.onboardingCompleted) {
-    return 'ritual';
+    return "ritual";
   }
 
   if (photoCount < 3 || !profile.profileReady) {
     if (photoCount === 3 && !profile.profileReady) {
-      return 'pricing';
+      return "pricing";
     }
 
-    return 'essence';
+    return "essence";
   }
 
-  return 'gallery';
+  return "gallery";
 };
 
 interface SanctuaryStore {
@@ -64,6 +79,12 @@ interface SanctuaryStore {
   isPremium: boolean;
   /** Whether a gallery fetch has completed at least once, successfully or not. */
   galleryLoaded: boolean;
+  discoveryMode: "discover" | "focus";
+  focusedProfileId: string | null;
+  discoverySection: import("./types").DiscoverySection;
+  discoveryOffset: number;
+  discoveryHasMore: boolean;
+  selectedChatId: string | null;
   plans: PricingPlanOption[];
   plansLoading: boolean;
   paymentPending: boolean;
@@ -76,7 +97,7 @@ interface SanctuaryStore {
   /** Shown once per login/session-restore; dismissing it is session-only, not persisted. */
   showBoostPromo: boolean;
   userLocation: string;
-  userGender: Gender | '';
+  userGender: Gender | "";
   currentProfile: CurrentUserProfile | null;
   sessionReady: boolean;
   backendConfigured: boolean;
@@ -104,9 +125,18 @@ interface SanctuaryStore {
   completePhotoStep: () => Promise<void>;
   continueWithFreePlan: () => Promise<void>;
   loadPricingPlans: () => Promise<void>;
-  loadGallery: () => Promise<void>;
-  swipeProfile: (targetProfileId: string, direction: SwipeDirection) => Promise<{ matched: boolean }>;
-  startPremiumPayment: (planId: PaidPricingPlan, phoneNumber: string) => Promise<void>;
+  loadGallery: (
+    section?: import("./types").DiscoverySection,
+    append?: boolean,
+  ) => Promise<void>;
+  swipeProfile: (
+    targetProfileId: string,
+    direction: SwipeDirection,
+  ) => Promise<{ matched: boolean; saved: boolean }>;
+  startPremiumPayment: (
+    planId: PaidPricingPlan,
+    phoneNumber: string,
+  ) => Promise<void>;
   loadBoostPack: () => Promise<void>;
   startBoostPayment: (phoneNumber: string) => Promise<void>;
   activateBoost: () => Promise<void>;
@@ -122,26 +152,26 @@ let authSubscriptionCleanup: (() => void) | null = null;
 
 const resetUnauthedState = (): Pick<
   SanctuaryStore,
-  | 'currentProfile'
-  | 'activeChats'
-  | 'galleryProfiles'
-  | 'photos'
-  | 'formData'
-  | 'ritualStep'
-  | 'dailyProfileViews'
-  | 'profileViewsUsed'
-  | 'paymentRequired'
-  | 'paymentAmountKsh'
-  | 'profileViewLockUntil'
-  | 'isPremium'
-  | 'galleryLoaded'
-  | 'paymentPending'
-  | 'userLocation'
-  | 'userGender'
-  | 'boostCredits'
-  | 'boostActiveUntil'
-  | 'boostPending'
-  | 'showBoostPromo'
+  | "currentProfile"
+  | "activeChats"
+  | "galleryProfiles"
+  | "photos"
+  | "formData"
+  | "ritualStep"
+  | "dailyProfileViews"
+  | "profileViewsUsed"
+  | "paymentRequired"
+  | "paymentAmountKsh"
+  | "profileViewLockUntil"
+  | "isPremium"
+  | "galleryLoaded"
+  | "paymentPending"
+  | "userLocation"
+  | "userGender"
+  | "boostCredits"
+  | "boostActiveUntil"
+  | "boostPending"
+  | "showBoostPromo"
 > => ({
   currentProfile: null,
   activeChats: [],
@@ -149,7 +179,7 @@ const resetUnauthedState = (): Pick<
   photos: [],
   formData: {},
   ritualStep: 0,
-  dailyProfileViews: 5,
+  dailyProfileViews: 10,
   profileViewsUsed: 0,
   paymentRequired: false,
   paymentAmountKsh: 99,
@@ -157,8 +187,8 @@ const resetUnauthedState = (): Pick<
   isPremium: false,
   galleryLoaded: false,
   paymentPending: false,
-  userLocation: '',
-  userGender: '',
+  userLocation: "",
+  userGender: "",
   boostCredits: 0,
   boostActiveUntil: null,
   boostPending: false,
@@ -188,19 +218,25 @@ const stopBoostPaymentPolling = () => {
 };
 
 export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
-  view: 'home',
+  view: "home",
   ritualStep: 0,
   formData: {},
   photos: [],
   galleryProfiles: [],
   activeChats: [],
-  dailyProfileViews: 5,
+  dailyProfileViews: 10,
   profileViewsUsed: 0,
   paymentRequired: false,
   paymentAmountKsh: 99,
   profileViewLockUntil: null,
   isPremium: false,
   galleryLoaded: false,
+  discoveryMode: "focus",
+  focusedProfileId: null,
+  discoverySection: "discover",
+  discoveryOffset: 0,
+  discoveryHasMore: true,
+  selectedChatId: null,
   plans: [],
   plansLoading: false,
   paymentPending: false,
@@ -210,16 +246,16 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
   boostPack: null,
   boostPackLoading: false,
   showBoostPromo: false,
-  userLocation: '',
-  userGender: '',
+  userLocation: "",
+  userGender: "",
   currentProfile: null,
   sessionReady: false,
   backendConfigured: isSupabaseConfigured,
   isBusy: false,
   galleryLoading: false,
   chatsLoading: false,
-  errorMessage: '',
-  infoMessage: '',
+  errorMessage: "",
+  infoMessage: "",
   authListenerReady: false,
 
   initializeApp: async () => {
@@ -227,12 +263,12 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({
         sessionReady: true,
         errorMessage:
-          'Set VITE_SUPABASE_URL and a browser key to connect the app: VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY.',
+          "Set VITE_SUPABASE_URL and a browser key to connect the app: VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY.",
       });
       return;
     }
 
-    set({ isBusy: true, errorMessage: '', infoMessage: '' });
+    set({ isBusy: true, errorMessage: "", infoMessage: "" });
 
     try {
       const session = await getSession();
@@ -240,7 +276,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       if (!session) {
         set({
           ...resetUnauthedState(),
-          view: 'home',
+          view: "home",
           sessionReady: true,
           isBusy: false,
         });
@@ -253,13 +289,13 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         ...resetUnauthedState(),
         sessionReady: true,
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Failed to initialize the app.',
+        errorMessage: describeError(error, "Failed to initialize the app."),
       });
     }
   },
 
   bootstrapAuthenticatedState: async (preferredView) => {
-    set({ isBusy: true, errorMessage: '', infoMessage: '' });
+    set({ isBusy: true, errorMessage: "", infoMessage: "" });
 
     try {
       const profile = await getMyProfile();
@@ -267,7 +303,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       if (!profile) {
         set({
           ...resetUnauthedState(),
-          view: 'home',
+          view: "home",
           sessionReady: true,
           isBusy: false,
         });
@@ -279,12 +315,22 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         listProfilePhotos(profile.id),
         getProfileViewStatus(),
       ]);
-      const chats = profileViewStatus.isLocked && !profile.isPremium ? [] : await listMatches();
+      const chats = await listMatches();
 
-      const targetView = preferredView ?? resolveAuthenticatedView(profile, photos.length);
+      const targetView =
+        preferredView ??
+        (new URLSearchParams(window.location.search).has("recovery")
+          ? "recovery"
+          : resolveAuthenticatedView(profile, photos.length));
       set({
         currentProfile: profile,
         formData: answers,
+        ritualStep: Math.max(
+          0,
+          Array.from({ length: 12 }, (_, i) => i).find(
+            (i) => !answers[i + 1],
+          ) ?? 11,
+        ),
         photos,
         activeChats: chats,
         dailyProfileViews: profile.dailySwipeLimit,
@@ -303,10 +349,10 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         // Fires on every sign-in and every restored session, once the user is
         // past onboarding/pricing setup — dismissing it is session-only, so it
         // reappears on the next bootstrap (next login) regardless.
-        showBoostPromo: targetView === 'gallery',
+        showBoostPromo: false,
       });
 
-      if (targetView === 'gallery') {
+      if (targetView === "gallery") {
         await get().loadGallery();
         void get().loadBoostPack();
       }
@@ -314,7 +360,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({
         sessionReady: true,
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to load your account.',
+        errorMessage: describeError(error, "Unable to load your account."),
       });
     }
   },
@@ -324,15 +370,27 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       return;
     }
 
-    const { data } = onAuthStateChange((_event, session) => {
+    const { data } = onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        set({ view: "recovery", sessionReady: true });
+        return;
+      }
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
+      if (
+        event === "SIGNED_IN" &&
+        (get().isBusy || get().currentProfile?.authUserId === session?.user.id)
+      )
+        return;
       if (session) {
-        void get().bootstrapAuthenticatedState();
+        setTimeout(() => {
+          void get().bootstrapAuthenticatedState();
+        }, 0);
       } else {
         stopPaymentPolling();
         stopBoostPaymentPolling();
         set({
           ...resetUnauthedState(),
-          view: 'home',
+          view: "home",
           sessionReady: true,
         });
       }
@@ -345,16 +403,48 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     set({ authListenerReady: true });
   },
 
-  setView: (view) => set({ view }),
+  setView: (view) => {
+    const profile = get().currentProfile;
+    if (
+      profile &&
+      ["gallery", "discover", "likes", "saved", "parlor", "profile"].includes(
+        view,
+      )
+    ) {
+      const onboardingView = resolveAuthenticatedView(
+        profile,
+        get().photos.length,
+      );
+      if (onboardingView !== "gallery") {
+        set({
+          view: onboardingView,
+          errorMessage:
+            "Finish setting up your profile before entering Discover.",
+          infoMessage: "",
+        });
+        return;
+      }
+    }
+    set({ view, errorMessage: "", infoMessage: "" });
+    if (
+      view === "gallery" ||
+      (view === "discover" && get().isPremium) ||
+      view === "likes" ||
+      view === "saved"
+    )
+      void get().loadGallery(
+        view === "gallery" || view === "discover" ? "discover" : view,
+      );
+  },
 
   setRitualStep: (step) => set({ ritualStep: step }),
 
-  clearMessages: () => set({ errorMessage: '', infoMessage: '' }),
+  clearMessages: () => set({ errorMessage: "", infoMessage: "" }),
 
   setErrorMessage: (message) => set({ errorMessage: message }),
 
   register: async (input) => {
-    set({ isBusy: true, errorMessage: '', infoMessage: '' });
+    set({ isBusy: true, errorMessage: "", infoMessage: "" });
 
     try {
       const { needsEmailConfirmation } = await signUpWithEmail(input);
@@ -363,25 +453,25 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         set({
           isBusy: false,
           infoMessage:
-            'Registration created your account. Confirm your email in Supabase, then sign in to continue.',
-          view: 'auth',
+            "Your account is created. Open the confirmation link in your email, then sign in to continue.",
+          view: "auth",
         });
         return false;
       }
 
-      await get().bootstrapAuthenticatedState('ritual');
+      await get().bootstrapAuthenticatedState("ritual");
       return true;
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to create your account.',
+        errorMessage: describeError(error, "Unable to create your account."),
       });
       return false;
     }
   },
 
   signIn: async (email, password) => {
-    set({ isBusy: true, errorMessage: '', infoMessage: '' });
+    set({ isBusy: true, errorMessage: "", infoMessage: "" });
 
     try {
       await signInWithEmail(email, password);
@@ -390,34 +480,35 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to sign in.',
+        errorMessage: describeError(error, "Unable to sign in."),
       });
       return false;
     }
   },
 
   signOut: async () => {
-    set({ isBusy: true, errorMessage: '', infoMessage: '' });
+    set({ isBusy: true, errorMessage: "", infoMessage: "" });
     stopPaymentPolling();
+    stopBoostPaymentPolling();
 
     try {
       await signOutRequest();
-      if (authSubscriptionCleanup) {
-        authSubscriptionCleanup();
-        authSubscriptionCleanup = null;
-      }
 
       set({
         ...resetUnauthedState(),
-        authListenerReady: false,
-        view: 'home',
+        selectedChatId: null,
+        focusedProfileId: null,
+        discoverySection: "discover",
+        discoveryOffset: 0,
+        discoveryHasMore: true,
+        view: "home",
         sessionReady: true,
         isBusy: false,
       });
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to sign out.',
+        errorMessage: describeError(error, "Unable to sign out."),
       });
     }
   },
@@ -426,11 +517,11 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const profile = get().currentProfile;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to update your profile.' });
+      set({ errorMessage: "You must be signed in to update your profile." });
       return false;
     }
 
-    set({ isBusy: true, errorMessage: '', infoMessage: '' });
+    set({ isBusy: true, errorMessage: "", infoMessage: "" });
 
     try {
       await updateMyProfile(profile.id, input);
@@ -441,14 +532,14 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         userLocation: refreshedProfile?.location ?? get().userLocation,
         userGender: refreshedProfile?.gender ?? get().userGender,
         isBusy: false,
-        infoMessage: 'Profile updated.',
+        infoMessage: "Profile updated.",
       });
 
       return true;
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to update your profile.',
+        errorMessage: describeError(error, "Unable to update your profile."),
       });
       return false;
     }
@@ -458,15 +549,22 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const profile = get().currentProfile;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to save your ritual answers.' });
+      set({
+        errorMessage: "You must be signed in to save your ritual answers.",
+      });
       return;
     }
 
     const currentAnswers = get().formData;
-    set({ isBusy: true, errorMessage: '' });
+    set({ isBusy: true, errorMessage: "" });
 
     try {
-      const nextAnswers = await saveRitualAnswer(profile.id, step, answer, currentAnswers);
+      const nextAnswers = await saveRitualAnswer(
+        profile.id,
+        step,
+        answer,
+        currentAnswers,
+      );
       const refreshedProfile = await getMyProfile();
 
       set({
@@ -479,7 +577,10 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to save your ritual answer.',
+        errorMessage: describeError(
+          error,
+          "Unable to save your ritual answer.",
+        ),
       });
     }
   },
@@ -496,7 +597,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({ photos });
     } catch (error) {
       set({
-        errorMessage: error instanceof Error ? error.message : 'Unable to refresh photos.',
+        errorMessage: describeError(error, "Unable to refresh photos."),
       });
     }
   },
@@ -505,11 +606,11 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const profile = get().currentProfile;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to upload photos.' });
+      set({ errorMessage: "You must be signed in to upload photos." });
       return;
     }
 
-    set({ isBusy: true, errorMessage: '' });
+    set({ isBusy: true, errorMessage: "" });
 
     try {
       await uploadProfilePhoto(profile.id, file, sortOrder);
@@ -526,13 +627,13 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to upload your photo.',
+        errorMessage: describeError(error, "Unable to upload your photo."),
       });
     }
   },
 
   removePhoto: async (photo) => {
-    set({ isBusy: true, errorMessage: '' });
+    set({ isBusy: true, errorMessage: "" });
 
     try {
       await deleteProfilePhoto(photo);
@@ -540,7 +641,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
 
       if (profile) {
         const photos = await listProfilePhotos(profile.id);
-        set({ photos, isBusy: false });
+        set({ photos, currentProfile: await getMyProfile(), isBusy: false });
         return;
       }
 
@@ -548,7 +649,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to remove that photo.',
+        errorMessage: describeError(error, "Unable to remove that photo."),
       });
     }
   },
@@ -558,26 +659,28 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const photoCount = get().photos.length;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to continue.' });
+      set({ errorMessage: "You must be signed in to continue." });
       return;
     }
 
     if (photoCount !== 3) {
-      set({ errorMessage: 'Add exactly 3 photos before entering the gallery.' });
+      set({
+        errorMessage: "Add exactly 3 photos before entering the gallery.",
+      });
       return;
     }
 
-    set({ isBusy: true, errorMessage: '' });
+    set({ isBusy: true, errorMessage: "" });
 
     try {
       set({
         isBusy: false,
-        view: 'pricing',
+        view: "pricing",
       });
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to finalize your profile.',
+        errorMessage: describeError(error, "Unable to finalize your profile."),
       });
     }
   },
@@ -594,7 +697,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     } catch (error) {
       set({
         plansLoading: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to load pricing plans.',
+        errorMessage: describeError(error, "Unable to load pricing plans."),
       });
     }
   },
@@ -603,11 +706,11 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const profile = get().currentProfile;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to choose a plan.' });
+      set({ errorMessage: "You must be signed in to choose a plan." });
       return;
     }
 
-    set({ isBusy: true, errorMessage: '' });
+    set({ isBusy: true, errorMessage: "" });
 
     try {
       await finalizeProfileReadiness(profile.id);
@@ -617,36 +720,53 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
 
       set({
         currentProfile: refreshedProfile,
-        dailyProfileViews: refreshedProfile?.dailySwipeLimit ?? 5,
+        dailyProfileViews: refreshedProfile?.dailySwipeLimit ?? 10,
         profileViewsUsed: profileViewStatus.usedViews,
-        paymentRequired: profileViewStatus.isLocked && !refreshedProfile?.isPremium,
+        paymentRequired:
+          profileViewStatus.isLocked && !refreshedProfile?.isPremium,
         paymentAmountKsh: profileViewStatus.paymentAmountKsh,
         profileViewLockUntil: profileViewStatus.lockedUntil,
         isPremium: Boolean(refreshedProfile?.isPremium),
         isBusy: false,
-        view: 'gallery',
+        view: "gallery",
       });
 
       await get().loadGallery();
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to choose that plan.',
+        errorMessage: describeError(error, "Unable to choose that plan."),
       });
     }
   },
 
-  loadGallery: async () => {
+  loadGallery: async (section = get().discoverySection, append = false) => {
     if (!get().currentProfile || get().galleryLoading) {
       return;
     }
 
-    set({ galleryLoading: true, errorMessage: '' });
+    set({ galleryLoading: true, errorMessage: "" });
 
     try {
-      const { profiles, status } = await listGalleryProfiles();
+      const offset = append ? get().discoveryOffset : 0;
+      const { profiles, status } = await listGalleryProfiles(section, offset);
       set({
-        galleryProfiles: profiles,
+        galleryProfiles: append
+          ? [
+              ...new Map(
+                [...get().galleryProfiles, ...profiles].map((p) => [p.id, p]),
+              ).values(),
+            ]
+          : profiles,
+        focusedProfileId:
+          section === "discover"
+            ? profiles.some((p) => p.id === get().focusedProfileId)
+              ? get().focusedProfileId
+              : (profiles[0]?.id ?? null)
+            : get().focusedProfileId,
+        discoverySection: section,
+        discoveryOffset: offset + profiles.length,
+        discoveryHasMore: profiles.length === 20,
         // Marks the attempt as done even when it returns nobody, so an empty
         // gallery shows its own screen instead of retrying forever.
         galleryLoaded: true,
@@ -660,7 +780,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({
         galleryLoaded: true,
         galleryLoading: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to load the gallery.',
+        errorMessage: describeError(error, "Unable to load the gallery."),
       });
     }
   },
@@ -669,45 +789,61 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const profile = get().currentProfile;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to swipe.' });
-      return { matched: false };
+      set({ errorMessage: "You must be signed in to swipe." });
+      return { matched: false, saved: false };
     }
 
-    set({ errorMessage: '' });
+    set({ errorMessage: "" });
 
     try {
       const result = await handleSwipe(targetProfileId, direction);
-      const nextProfiles = get().galleryProfiles.filter((profileItem) => profileItem.id !== targetProfileId);
+      const nextProfiles = get().galleryProfiles.filter(
+        (profileItem) => profileItem.id !== targetProfileId,
+      );
       const nextProfileViewsUsed = get().isPremium
         ? get().profileViewsUsed
-        : Math.min(get().dailyProfileViews, get().dailyProfileViews - result.remainingSwipes);
+        : Math.min(
+            get().dailyProfileViews,
+            get().dailyProfileViews - result.remainingSwipes,
+          );
 
       set({
         galleryProfiles: nextProfiles,
         profileViewsUsed: nextProfileViewsUsed,
+        discoveryOffset: Math.max(0, get().discoveryOffset - 1),
+        paymentRequired: !get().isPremium && result.remainingSwipes === 0,
       });
 
-      if (result.matched) {
-        await get().loadChats();
+      // A refresh failure must not turn a successfully saved decision into a failed one.
+      try {
+        if (result.matched) await get().loadChats();
+        if (nextProfiles.length < 3 || result.remainingSwipes === 0)
+          await get().loadGallery();
+      } catch (error) {
+        set({
+          errorMessage: describeError(
+            error,
+            "Saved. Refresh to load more profiles.",
+          ),
+        });
       }
 
-      if (nextProfiles.length < 3) {
-        await get().loadGallery();
-      }
-
-      return { matched: result.matched };
+      return { matched: result.matched, saved: true };
     } catch (error) {
+      const message = describeError(
+        error,
+        "Unable to save that decision. Please try again.",
+      );
       set({
-        errorMessage:
-          error instanceof Error && error.message.includes('daily_limit_reached')
-            ? 'You have reached your free profile view limit.'
-            : error instanceof Error && error.message.includes('profile_view_limit_reached')
-              ? 'You have reached your free profile view limit.'
-            : error instanceof Error
-              ? error.message
-              : 'Unable to save that swipe.',
+        errorMessage: message.includes("daily_limit_reached")
+          ? "You have used your 10 decisions today. Messages remain available."
+          : message.includes("profile_view_limit_reached")
+            ? "You have used your 10 decisions today. Messages remain available."
+            : message.includes("Complete or resume your profile first")
+              ? "Finish setting up your profile, or resume discovery in your settings, before liking or passing."
+              : message,
       });
-      return { matched: false };
+      return { matched: false, saved: false };
     }
   },
 
@@ -720,22 +856,31 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const profile = get().currentProfile;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to unlock premium.' });
+      set({ errorMessage: "You must be signed in to unlock premium." });
       return;
     }
 
     stopPaymentPolling();
-    set({ isBusy: true, paymentPending: false, errorMessage: '', infoMessage: '' });
+    set({
+      isBusy: true,
+      paymentPending: false,
+      errorMessage: "",
+      infoMessage: "",
+    });
 
     let reference: string;
     let promptMessage: string;
 
     try {
-      ({ reference, message: promptMessage } = await requestMpesaCharge(planId, phoneNumber));
+      if (!profile.profileReady) await finalizeProfileReadiness(profile.id);
+      ({ reference, message: promptMessage } = await requestMpesaCharge(
+        planId,
+        phoneNumber,
+      ));
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to start M-Pesa payment.',
+        errorMessage: describeError(error, "Unable to start M-Pesa payment."),
       });
       throw error;
     }
@@ -744,24 +889,28 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       isBusy: false,
       paymentPending: true,
       // Paystack returns its own prompt copy; fall back when it sends none.
-      infoMessage: promptMessage ||
-        'STK push sent. Enter your M-Pesa PIN on your phone to unlock premium access.',
+      infoMessage:
+        promptMessage ||
+        "STK push sent. Enter your M-Pesa PIN on your phone to unlock premium access.",
     });
 
     // The prompt expires after about a minute; keep checking a little past that
     // so a slow confirmation still lands without leaving the poll running.
     const deadline = Date.now() + 120_000;
 
-    const finish = async (settled: 'completed' | 'failed' | 'amount_mismatch') => {
+    const finish = async (
+      settled: "completed" | "failed" | "amount_mismatch",
+    ) => {
       stopPaymentPolling();
 
-      if (settled !== 'completed') {
+      if (settled !== "completed") {
         set({
           paymentPending: false,
-          infoMessage: '',
-          errorMessage: settled === 'amount_mismatch'
-            ? 'The amount received did not match the plan price. Contact support with your M-Pesa code.'
-            : 'The M-Pesa payment was not completed. You can try again.',
+          infoMessage: "",
+          errorMessage:
+            settled === "amount_mismatch"
+              ? "The amount received did not match the plan price. Contact support with your M-Pesa code."
+              : "The M-Pesa payment was not completed. You can try again.",
         });
         return;
       }
@@ -774,14 +923,18 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({
         currentProfile: refreshedProfile,
         isPremium: Boolean(refreshedProfile?.isPremium),
-        dailyProfileViews: refreshedProfile?.dailySwipeLimit ?? 5,
+        dailyProfileViews: refreshedProfile?.dailySwipeLimit ?? 10,
         profileViewsUsed: profileViewStatus.usedViews,
         paymentRequired: false,
         profileViewLockUntil: null,
         paymentPending: false,
-        infoMessage: 'Payment confirmed. Premium access is now active.',
+        infoMessage: "Payment confirmed. Premium access is now active.",
       });
 
+      set({
+        boostCredits: refreshedProfile?.boostCredits ?? 0,
+        boostActiveUntil: refreshedProfile?.boostActiveUntil ?? null,
+      });
       await get().loadGallery();
     };
 
@@ -789,13 +942,17 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       try {
         const state = await getPaymentState(reference);
 
-        if (state === 'completed' || state === 'failed' || state === 'amount_mismatch') {
+        if (
+          state === "completed" ||
+          state === "failed" ||
+          state === "amount_mismatch"
+        ) {
           await finish(state);
           return;
         }
       } catch (error) {
         // A transient read failure should not abandon a payment in flight.
-        console.error('Payment status check failed:', error);
+        console.error("Payment status check failed:", error);
       }
 
       if (Date.now() >= deadline) {
@@ -803,7 +960,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         set({
           paymentPending: false,
           infoMessage:
-            'Still waiting for M-Pesa to confirm. If you completed the payment, reopen the app in a moment.',
+            "Still waiting for M-Pesa to confirm. If you completed the payment, reopen the app in a moment.",
         });
         return;
       }
@@ -825,7 +982,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       set({ boostPack: await fetchBoostPack(), boostPackLoading: false });
     } catch (error) {
       set({ boostPackLoading: false });
-      console.error('Unable to load the boost pack:', error);
+      console.error("Unable to load the boost pack:", error);
     }
   },
 
@@ -839,24 +996,32 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     const profile = get().currentProfile;
 
     if (!profile) {
-      set({ errorMessage: 'You must be signed in to buy a boost.' });
+      set({ errorMessage: "You must be signed in to buy a boost." });
       return;
     }
 
-    const skuId: PurchasableSkuId = get().boostPack?.id ?? 'boost_pack_2';
+    const skuId: PurchasableSkuId = get().boostPack?.id ?? "boost_pack_2";
 
     stopBoostPaymentPolling();
-    set({ isBusy: true, boostPending: false, errorMessage: '', infoMessage: '' });
+    set({
+      isBusy: true,
+      boostPending: false,
+      errorMessage: "",
+      infoMessage: "",
+    });
 
     let reference: string;
     let promptMessage: string;
 
     try {
-      ({ reference, message: promptMessage } = await requestMpesaCharge(skuId, phoneNumber));
+      ({ reference, message: promptMessage } = await requestMpesaCharge(
+        skuId,
+        phoneNumber,
+      ));
     } catch (error) {
       set({
         isBusy: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to start M-Pesa payment.',
+        errorMessage: describeError(error, "Unable to start M-Pesa payment."),
       });
       throw error;
     }
@@ -864,22 +1029,26 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     set({
       isBusy: false,
       boostPending: true,
-      infoMessage: promptMessage ||
-        'STK push sent. Enter your M-Pesa PIN on your phone to buy your boosts.',
+      infoMessage:
+        promptMessage ||
+        "STK push sent. Enter your M-Pesa PIN on your phone to buy your boosts.",
     });
 
     const deadline = Date.now() + 120_000;
 
-    const finish = async (settled: 'completed' | 'failed' | 'amount_mismatch') => {
+    const finish = async (
+      settled: "completed" | "failed" | "amount_mismatch",
+    ) => {
       stopBoostPaymentPolling();
 
-      if (settled !== 'completed') {
+      if (settled !== "completed") {
         set({
           boostPending: false,
-          infoMessage: '',
-          errorMessage: settled === 'amount_mismatch'
-            ? 'The amount received did not match the boost pack price. Contact support with your M-Pesa code.'
-            : 'The M-Pesa payment was not completed. You can try again.',
+          infoMessage: "",
+          errorMessage:
+            settled === "amount_mismatch"
+              ? "The amount received did not match the boost pack price. Contact support with your M-Pesa code."
+              : "The M-Pesa payment was not completed. You can try again.",
         });
         return;
       }
@@ -891,7 +1060,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         boostCredits: refreshedProfile?.boostCredits ?? 0,
         boostActiveUntil: refreshedProfile?.boostActiveUntil ?? null,
         boostPending: false,
-        infoMessage: 'Payment confirmed. Your boosts are ready to use.',
+        infoMessage: "Payment confirmed. Your boosts are ready to use.",
       });
     };
 
@@ -899,12 +1068,16 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       try {
         const state = await getPaymentState(reference);
 
-        if (state === 'completed' || state === 'failed' || state === 'amount_mismatch') {
+        if (
+          state === "completed" ||
+          state === "failed" ||
+          state === "amount_mismatch"
+        ) {
           await finish(state);
           return;
         }
       } catch (error) {
-        console.error('Boost payment status check failed:', error);
+        console.error("Boost payment status check failed:", error);
       }
 
       if (Date.now() >= deadline) {
@@ -912,7 +1085,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
         set({
           boostPending: false,
           infoMessage:
-            'Still waiting for M-Pesa to confirm. If you completed the payment, reopen the app in a moment.',
+            "Still waiting for M-Pesa to confirm. If you completed the payment, reopen the app in a moment.",
         });
         return;
       }
@@ -927,21 +1100,27 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     try {
       const outcome = await activateBoostCredit();
 
-      if (outcome === 'activated') {
+      if (outcome === "activated") {
         const refreshedProfile = await getMyProfile();
         set({
           currentProfile: refreshedProfile,
           boostCredits: refreshedProfile?.boostCredits ?? 0,
           boostActiveUntil: refreshedProfile?.boostActiveUntil ?? null,
-          infoMessage: 'Boost activated for 30 minutes.',
+          infoMessage: "Boost activated for 30 minutes.",
         });
-      } else if (outcome === 'no_credits') {
-        set({ errorMessage: 'You have no boosts left. Buy a Boost Pack to activate one.' });
-      } else if (outcome === 'already_active') {
-        set({ errorMessage: 'A boost is already active. Wait for it to finish before activating another.' });
+      } else if (outcome === "no_credits") {
+        set({
+          errorMessage:
+            "You have no boosts left. Buy a Boost Pack to activate one.",
+        });
+      } else if (outcome === "already_active") {
+        set({
+          errorMessage:
+            "A boost is already active. Wait for it to finish before activating another.",
+        });
       }
     } catch (error) {
-      set({ errorMessage: error instanceof Error ? error.message : 'Unable to activate boost.' });
+      set({ errorMessage: describeError(error, "Unable to activate boost.") });
     }
   },
 
@@ -956,15 +1135,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       return;
     }
 
-    if (!get().isPremium && get().paymentRequired) {
-      set({
-        activeChats: [],
-        errorMessage: `Unlock premium for ${get().paymentAmountKsh} KSH or wait for the 24-hour profile view window to reset.`,
-      });
-      return;
-    }
-
-    set({ chatsLoading: true, errorMessage: '' });
+    set({ chatsLoading: true, errorMessage: "" });
 
     try {
       const activeChats = await listMatches();
@@ -972,7 +1143,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     } catch (error) {
       set({
         chatsLoading: false,
-        errorMessage: error instanceof Error ? error.message : 'Unable to load conversations.',
+        errorMessage: describeError(error, "Unable to load conversations."),
       });
     }
   },
@@ -994,7 +1165,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
     try {
       await markMatchRead(chatId);
     } catch (error) {
-      console.error('Unable to mark conversation as read:', error);
+      console.error("Unable to mark conversation as read:", error);
     }
   },
 
@@ -1009,8 +1180,10 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       });
     } catch (error) {
       set({
-        errorMessage:
-          error instanceof Error ? error.message : 'Unable to record that acknowledgement.',
+        errorMessage: describeError(
+          error,
+          "Unable to record that acknowledgement.",
+        ),
       });
       throw error;
     }
@@ -1024,7 +1197,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       await get().loadChats();
     } catch (error) {
       set({
-        errorMessage: error instanceof Error ? error.message : 'Unable to send your message.',
+        errorMessage: describeError(error, "Unable to send your message."),
       });
       throw error;
     }
@@ -1036,7 +1209,7 @@ export const useSanctuaryStore = create<SanctuaryStore>((set, get) => ({
       await get().loadChats();
     } catch (error) {
       set({
-        errorMessage: error instanceof Error ? error.message : 'Unable to close that connection.',
+        errorMessage: describeError(error, "Unable to close that connection."),
       });
     }
   },
