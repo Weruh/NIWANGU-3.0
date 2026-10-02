@@ -1,15 +1,30 @@
-export type ViewState = 'home' | 'auth' | 'register' | 'ritual' | 'essence' | 'pricing' | 'gallery' | 'parlor' | 'profile';
-export type Gender = 'female' | 'male';
-export type PricingPlan = 'free' | '7_days' | '30_days' | '90_days' | '180_days' | '365_days';
-export type PaidPricingPlan = Exclude<PricingPlan, 'free'>;
-export type BoostSkuId = 'boost_pack_2';
+export type ViewState =
+  | "home"
+  | "auth"
+  | "register"
+  | "ritual"
+  | "essence"
+  | "pricing"
+  | "discover"
+  | "gallery"
+  | "parlor"
+  | "profile"
+  | "likes"
+  | "saved"
+  | "recovery";
+export type Gender = "female" | "male";
+export type PricingPlan =
+  "free" | "7_days" | "30_days" | "90_days" | "180_days" | "365_days";
+export type PaidPricingPlan = Exclude<PricingPlan, "free">;
+export type BoostSkuId = "boost_pack_2";
 /** Anything requestMpesaCharge can be asked to charge for: a subscription plan or a boost pack. */
 export type PurchasableSkuId = PaidPricingPlan | BoostSkuId;
-export type SwipeDirection = 'like' | 'pass';
-export type PaymentState = 'pending' | 'completed' | 'failed' | 'amount_mismatch';
+export type SwipeDirection = "like" | "pass";
+export type PaymentState =
+  "pending" | "completed" | "failed" | "amount_mismatch";
 
 /** Which tab of the pricing page a plan belongs to. */
-export type PricingPlanGroup = 'standard' | 'long_term';
+export type PricingPlanGroup = "standard" | "long_term";
 
 /** A plan as shown in the UI: price and duration from the database, copy from lib/plans. */
 export interface PricingPlanOption {
@@ -44,8 +59,8 @@ export interface CurrentUserProfile {
   authUserId: string | null;
   name: string;
   age: number | null;
-  gender: Gender | '';
-  seekingGender: Gender | '';
+  gender: Gender | "";
+  seekingGender: Gender | "";
   location: string;
   intent: string;
   coreValue: string;
@@ -56,6 +71,7 @@ export interface CurrentUserProfile {
   /** True only while the subscription is also unexpired, matching has_active_premium() server-side. */
   isPremium: boolean;
   premiumExpiresAt: string | null;
+  discoveryPaused: boolean;
   dailySwipeLimit: number;
   boostCredits: number;
   /** Timestamp may be in the past — that means no boost is active, not null. */
@@ -116,11 +132,11 @@ export interface ChatSession {
 }
 
 /** `sending` and `failed` mark optimistic bubbles that the server has not accepted yet. */
-export type MessageStatus = 'sending' | 'sent' | 'failed';
+export type MessageStatus = "sending" | "sent" | "failed";
 
 export interface Message {
   id: string;
-  sender: 'me' | 'partner' | 'system';
+  sender: "me" | "partner" | "system";
   text: string;
   timestamp: number;
   isSystem?: boolean;
@@ -139,7 +155,7 @@ export interface RitualQuestion {
   id: number;
   category: string;
   question: string;
-  type: 'text' | 'choice';
+  type: "text" | "choice";
   options?: string[];
   maxLength?: number;
 }
@@ -158,3 +174,16 @@ export interface SwipeResult {
   matchId: string | null;
   remainingSwipes: number;
 }
+
+export interface MemberPreferences {
+  profile_id: string;
+  min_age: number;
+  max_age: number;
+  town: string;
+  intent: string;
+  core_value: string;
+  incognito: boolean;
+  notify_matches: boolean;
+  notify_messages: boolean;
+}
+export type DiscoverySection = "discover" | "likes" | "saved";

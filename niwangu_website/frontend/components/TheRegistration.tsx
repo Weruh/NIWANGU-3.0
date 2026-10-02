@@ -26,7 +26,7 @@ export const TheRegistration: FC = () => {
     e.preventDefault();
     const normalizedName = fullName.trim();
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPassword = password.trim();
+    const normalizedPassword = password;
     const parsedAge = Number(age);
     const validationErrors = [
       normalizedName.length < 2 ? 'Full name must be at least 2 characters.' : '',
@@ -65,7 +65,7 @@ export const TheRegistration: FC = () => {
       exit={{ opacity: 0, x: -20 }}
       className="min-h-dvh bg-sandstone flex flex-col p-6"
     >
-      <button
+      <button aria-label="Return to homepage"
         onClick={() => {
           clearMessages();
           setView('home');
@@ -77,7 +77,7 @@ export const TheRegistration: FC = () => {
 
       <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
         <h2 className="font-serif text-4xl text-midnight mb-2">Begin Journey</h2>
-        <p className="text-midnight/80 mb-10 font-light">Create your sanctuary profile with Supabase Auth.</p>
+        <p className="text-midnight/80 mb-10 font-light">Tell us a little about yourself to begin.</p>
 
         <motion.form
           onSubmit={(event) => {

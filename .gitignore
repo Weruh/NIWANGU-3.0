@@ -51,3 +51,13 @@ Thumbs.db
 
 *.marketing
 .claude
+# Generated caches and test output
+.vite/
+.cache/
+coverage/
+playwright-report/
+test-results/
+.eslintcache
+*.tsbuildinfo
+__pycache__/
+*.pyc

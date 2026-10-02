@@ -92,5 +92,5 @@ export const getProfileFieldsFromAnswers = (answers: Record<number, string>) => 
   core_value: answers[6] ?? '',
   why_niwangu: answers[10] ?? '',
   boundary: answers[12] ?? '',
-  onboarding_completed: Boolean(answers[1] && answers[6] && answers[10] && answers[12]),
+  onboarding_completed: RITUAL_QUESTIONS.every(question => Boolean(answers[question.id]?.trim())),
 });
