@@ -31,6 +31,8 @@ jobs:
 
   edge-functions:
     runs-on: ubuntu-latest
+    env:
+      DENO_NO_PACKAGE_JSON: "1"
     defaults:
       run:
         working-directory: niwangu_website/supabase
@@ -39,8 +41,8 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: "2.9.4"
-      - run: deno check --frozen --node-modules-dir=auto functions/paystack-charge/index.ts functions/paystack-webhook/index.ts functions/delete-account/index.ts
-      - run: deno test --frozen --node-modules-dir=auto --allow-env tests/webhook_test.ts tests/delete_account_test.ts
+      - run: deno check --frozen --node-modules-dir=none functions/paystack-charge/index.ts functions/paystack-webhook/index.ts functions/delete-account/index.ts
+      - run: deno test --frozen --node-modules-dir=none --allow-env tests/webhook_test.ts tests/delete_account_test.ts
 
   database:
     runs-on: ubuntu-latest
