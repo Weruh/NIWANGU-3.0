@@ -15,6 +15,7 @@ import {
 import { useSanctuaryStore } from '../store';
 import { Button } from './Button';
 import { OptimizedImage } from './OptimizedImage';
+import { footerLinks } from '../lib/infoPages';
 
 const galleryImages = [
   {
@@ -120,239 +121,6 @@ const testimonials = [
  {image:'https://images.unsplash.com/photo-1544005313-94ddf0286df2',quote:'What helps you feel comfortable when getting to know someone?',name:'Conversation starter · Boundaries'},
 ];
 
-const footerLinks = [
-  { label: 'Contact Us', href: '/contact-us' },
-  { label: 'FAQs', href: '/faqs' },
-  { label: 'Privacy Policy', href: '/privacy-policy' },
-  { label: 'Terms of Service', href: '/terms-of-service' },
-  { label: 'Community Guidelines', href: '/community-guidelines' },
-];
-
-// Shown on the policy pages. A fixed revision date, not the current year:
-// these documents should say when they were last actually revised.
-const POLICY_LAST_UPDATED = '1 October 2026';
-
-const footerPages = {
-  '/contact-us': {
-    eyebrow: 'Support',
-    title: 'Contact Us',
-    intro:
-      'Niwangu is run by a small team in Kenya. Use the address that matches what you need and we will route it to the right person.',
-    sections: [
-      {
-        title: 'Accounts and Passes',
-        body: 'Email support@niwangu.com for help with signing in, editing your profile, questions about a pass, or anything that looks wrong in the app. If your question is about a payment, include the M-Pesa confirmation code and the phone number you paid from — that is what lets us find the transaction.',
-      },
-      {
-        title: 'Safety and Conduct',
-        body: 'Email safety@niwangu.com to report harassment, threats, a fake or stolen profile, a request for money, or anyone who ignores a stated boundary. Include the member’s name as it appears in the app and a screenshot if you have one. Reports about someone’s immediate safety are read first.',
-      },
-      {
-        title: 'Privacy and Your Data',
-        body: 'Email privacy@niwangu.com to ask what information we hold about you, to correct it, or to request deletion of your account and its data. See the Privacy Policy for what we collect and how long it is kept.',
-      },
-      {
-        title: 'Business and Media',
-        body: 'For partnerships, press, or anything commercial, email hello@niwangu.com.',
-      },
-      {
-        title: 'Emergencies',
-        body: 'Niwangu is not an emergency service and is not monitored around the clock. If you are in immediate danger, contact the Kenya Police on 999 or 112 rather than waiting for a reply from us.',
-      },
-    ],
-  },
-  '/faqs': {
-    eyebrow: 'Help Center',
-    title: 'Frequently Asked Questions',
-    intro: 'How Niwangu works, what it costs, and why it behaves differently from the apps you are used to.',
-    sections: [
-      {
-        title: 'What is Niwangu?',
-        body: 'A dating app for people looking for something serious. Instead of an endless feed, you answer a set of questions about what you want, and Niwangu uses those answers to decide who you meet and to tell you why.',
-      },
-      {
-        title: 'What is the Alignment Ritual?',
-        body: 'Twelve questions you answer when you join, covering what you are building, your timeline, where you are in life, children, your core value, your non-negotiable, how you handle conflict, your social energy, how much you value introspection, and one open question about what you will no longer entertain. Your answers shape who you are shown.',
-      },
-      {
-        title: 'How does matching work?',
-        body: 'Two things must line up before anyone is shown to you: you are each looking for the other’s gender, and your answers about wanting children are not irreconcilable. Everyone else is ranked, not filtered — people whose Ritual answers align with yours come up first, and anyone who has already liked you is moved to the front.',
-      },
-      {
-        title: 'Can I browse profiles or focus on one person?',
-        body: 'Choose Discover to browse profile cards or Focus to consider one person at a time. Both modes share your decisions and profiles. Switching modes, refreshing, and opening a profile never consume decisions.',
-      },
-      {
-        title: 'What does “Why you align” mean on a profile?',
-        body: 'The specific things you and that person answered the same way — wanting children, a shared timeline, the same core value. Niwangu only claims something when you genuinely share it, so a profile with fewer reasons listed simply overlaps with you on fewer answers.',
-      },
-      {
-        title: 'How much can I use for free?',
-        body: 'Ten Like or Pass decisions each day, shared across Discover and Focus. Browsing and opening profiles use no decisions. Discovery pauses after your tenth decision, while matched chat stays free. The allowance resets at midnight Kenya time.',
-      },
-      {
-        title: 'What do passes cost and how do I pay?',
-        body: 'Passes run from KSh 99 for 7 days up to KSh 1,799 for a year, and remove the daily view limit for that period. Payment is by M-Pesa: you enter your Safaricom number, approve the STK prompt on your phone, and access opens as soon as the payment is confirmed.',
-      },
-      {
-        title: 'Does a pass renew automatically?',
-        body: 'No. Nothing is ever charged again without you starting a new payment yourself. When a pass ends you simply return to the free daily limit.',
-      },
-      {
-        title: 'What if I buy a pass before my current one ends?',
-        body: 'The new days are added to the time you have left rather than replacing it, so you never lose days by renewing early.',
-      },
-      {
-        title: 'Why do I have to read someone’s boundary first?',
-        body: 'If your match stated a boundary in the Ritual, it replaces the message box until you acknowledge it. It takes one tap, it only happens once per conversation, and it means the first thing you say is written knowing where that person stands.',
-      },
-      {
-        title: 'Can I change my Ritual answers later?',
-        body: 'Yes. Update them from your profile and matching adjusts straight away, so who you are shown reflects your current answers rather than the ones you gave when you joined.',
-      },
-      {
-        title: 'How do I end a conversation or report someone?',
-        body: 'Any conversation can be closed with a reason, which ends it respectfully for both people. Use Safety on a profile or conversation to block someone or submit a confidential report. You can also email safety@niwangu.com.',
-      },
-    ],
-  },
-  '/privacy-policy': {
-    eyebrow: 'Legal',
-    title: 'Privacy Policy',
-    intro:
-      'What Niwangu collects, why, who it is shared with, and what you can ask us to do with it. Written to be read rather than skimmed past.',
-    sections: [
-      {
-        title: 'What You Give Us',
-        body: 'Your email address and password when you register; your name, age, gender, the gender you are looking for, and the location you type; up to three photos; your twelve Ritual answers; and the messages you send to matches. Passwords are hashed by our authentication provider and are never visible to us.',
-      },
-      {
-        title: 'What We Record As You Use Niwangu',
-        body: 'Your likes and passes, saved profiles, matches, reports and blocks, notification preferences, when you last read a conversation, and standard technical logs. Decisions are recorded to enforce the daily allowance.',
-      },
-      {
-        title: 'Location',
-        body: 'Niwangu does not use GPS and does not track your location. The place shown on your profile is only the text you typed, and it is never more precise than what you chose to write.',
-      },
-      {
-        title: 'Payments',
-        body: 'Payments are processed by Paystack over M-Pesa. We store the phone number used, the amount, the plan, and the reference and receipt numbers so a payment can be reconciled and support can help you. We never see or store your M-Pesa PIN or any card details.',
-      },
-      {
-        title: 'What Other Members Can See',
-        body: 'Your name, age, gender, location, photos, your stated boundary, and the specific Ritual answers you have in common with the person viewing you. Your email address, phone number, payment records, and full set of Ritual answers are never shown to other members.',
-      },
-      {
-        title: 'Who Else Processes Your Data',
-        body: 'Supabase provides the database, authentication, and photo storage. GitHub Pages hosts the website. Paystack processes payments. We do not sell your personal data, and we do not share it for advertising.',
-      },
-      {
-        title: 'How Long We Keep It',
-        body: 'Your profile and content are kept while your account exists. When you delete your account, your profile, photos, Ritual answers, likes, and matches are removed. Records of completed payments are retained for the period required for financial and tax purposes.',
-      },
-      {
-        title: 'Your Rights',
-        body: 'Under the Kenya Data Protection Act, 2019 you may ask for a copy of your data, correct it, ask for it to be deleted, or object to how it is used. Email privacy@niwangu.com and we will respond within the statutory period. You may also complain to the Office of the Data Protection Commissioner.',
-      },
-      {
-        title: 'Changes to This Policy',
-        body: 'If we change how information is collected or used, this page is updated and the revision date below changes with it.',
-      },
-    ],
-  },
-  '/terms-of-service': {
-    eyebrow: 'Legal',
-    title: 'Terms of Service',
-    intro:
-      'The agreement between you and Niwangu. By creating an account you accept these terms.',
-    sections: [
-      {
-        title: 'Who Can Join',
-        body: 'You must be at least 18 years old to use Niwangu. Accounts found to belong to anyone under 18 are removed immediately and permanently.',
-      },
-      {
-        title: 'Your Account',
-        body: 'Give accurate information and keep your sign-in details to yourself. You are responsible for activity on your account. One person, one account — do not create an account on someone else’s behalf or impersonate anyone.',
-      },
-      {
-        title: 'Free Access and Passes',
-        body: 'Without a pass you have ten Like or Pass decisions per Kenya calendar day. Existing matched conversations stay free. A pass removes the decision limit and includes the Premium tools shown at checkout.',
-      },
-      {
-        title: 'Payment',
-        body: 'Passes are paid in Kenyan Shillings by M-Pesa through Paystack. A pass starts once payment is confirmed, not when the prompt is sent. Passes do not renew automatically and you will never be charged again without starting a new payment. Buying while a pass is still running adds the new days to your remaining time.',
-      },
-      {
-        title: 'If Something Goes Wrong With a Payment',
-        body: 'If money leaves your account and access does not open, email support@niwangu.com with the M-Pesa confirmation code and the number you paid from, and we will reconcile it. Contact us before attempting the payment a second time.',
-      },
-      {
-        title: 'Your Content',
-        body: 'Your photos, answers, and messages remain yours. You give Niwangu permission to store them and to display them to other members as the app is designed to do, for as long as your account exists.',
-      },
-      {
-        title: 'How You Must Behave',
-        body: 'The Community Guidelines form part of these terms. In short: be honest, respect stated boundaries and the word no, and do not harass, threaten, defraud, or solicit money from other members.',
-      },
-      {
-        title: 'Suspension and Removal',
-        body: 'We may limit, suspend, or remove an account that breaks these terms or the guidelines, or that puts other members at risk. Where a serious risk to someone is involved we will act first and explain afterwards.',
-      },
-      {
-        title: 'What Niwangu Does Not Promise',
-        body: 'We match people, we do not vet them. Niwangu does not run background or criminal record checks, and cannot guarantee that anyone is who they claim to be, that you will match with anyone, or how any meeting will go. Meet in public, tell someone where you are going, and never send money to someone you have met here.',
-      },
-      {
-        title: 'Changes',
-        body: 'Features and prices may change as Niwangu develops. Material changes to these terms will be reflected on this page with a new revision date. Continuing to use Niwangu after a change means you accept it.',
-      },
-      {
-        title: 'Governing Law',
-        body: 'These terms are governed by the laws of Kenya, and the courts of Kenya have jurisdiction over any dispute arising from them.',
-      },
-    ],
-  },
-  '/community-guidelines': {
-    eyebrow: 'Safety',
-    title: 'Community Guidelines',
-    intro:
-      'Niwangu only works if people arrive in good faith. These are the rules that make that possible, and what happens when they are broken.',
-    sections: [
-      {
-        title: 'Respect the Boundary',
-        body: 'Every member states something they are no longer willing to entertain, and you have to read it before you can send a first message. Acknowledging it is not a formality. Testing, arguing with, or ignoring someone’s stated boundary is treated as harassment.',
-      },
-      {
-        title: 'Be Honest',
-        body: 'Use recent photos that are actually of you, give your real age, and answer the Ritual truthfully. The whole app is built on those answers, so misrepresenting them wastes other people’s time as much as your own. Never present yourself as someone you are not.',
-      },
-      {
-        title: 'Take No For an Answer',
-        body: 'Someone may end a conversation, decline to meet, or stop replying at any point and does not owe you a reason. Pressure, guilt, repeated requests after a refusal, and abuse after rejection are all grounds for removal.',
-      },
-      {
-        title: 'Keep It Free of Harm',
-        body: 'No harassment, hate speech, threats, slurs, or content that degrades anyone. No sexual content sent to someone who has not asked for it. No content involving minors, ever — that is reported to the authorities as well as removed.',
-      },
-      {
-        title: 'Never Send Money',
-        body: 'No genuine member will ask you for money, M-Pesa transfers, airtime, or help with a business or emergency. Requests like these are the most common scam on Kenyan dating platforms. Do not send anything, and report it to safety@niwangu.com straight away.',
-      },
-      {
-        title: 'Protect Your Own Details',
-        body: 'Keep conversations in the Parlor until you trust someone. Be careful about sharing your ID, workplace, home area, or financial details early. If someone pushes hard to move to another app immediately, treat it as a warning sign.',
-      },
-      {
-        title: 'Report What You See',
-        body: 'You can close any conversation with a reason, which ends it without confrontation. For behaviour that others should be protected from, email safety@niwangu.com with the member’s name and a screenshot. Reporting is confidential and the person is not told who reported them.',
-      },
-      {
-        title: 'What Happens When These Are Broken',
-        body: 'Depending on severity we may issue a warning, remove content, limit an account, or remove it permanently. Impersonation, scams, threats, and anything involving minors result in immediate removal without warning.',
-      },
-    ],
-  },
-};
 
 const NiwanguLogo = ({ className = 'h-16 w-16' }: { className?: string }) => (
   <img src="/niwangu-logo.png" alt="Niwangu" className={`${className} object-contain rounded-full`} />
@@ -393,62 +161,10 @@ const HeroGallery = () => (
   </div>
 );
 
-type FooterPage = (typeof footerPages)[keyof typeof footerPages];
-
-const InfoPage = ({ page, currentYear }: { page: FooterPage; currentYear: number }) => (
-  <motion.main
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="min-h-dvh bg-sandstone text-midnight"
-  >
-    <header className="border-b border-midnight/10 bg-white/70 px-6 py-5 backdrop-blur sm:px-10 lg:px-14">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6">
-        <a href="/" className="flex items-center gap-3 text-sageDeep" aria-label="Return to Niwangu homepage">
-          <NiwanguLogo className="h-14 w-14" />
-
-        </a>
-        <a
-          href="/"
-          className="rounded-full border border-sage/40 bg-white px-5 py-2 text-sm font-medium text-midnight transition hover:border-midnight hover:bg-midnight hover:text-sandstone"
-        >
-          Back Home
-        </a>
-      </div>
-    </header>
-
-    <section className="px-6 py-16 sm:px-10 sm:py-20 lg:px-14">
-      <div className="mx-auto max-w-4xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sageDeep">{page.eyebrow}</p>
-        <h1 className="mt-4 font-serif text-5xl leading-tight text-midnight sm:text-6xl">{page.title}</h1>
-        <p className="mt-6 max-w-[62ch] text-lg leading-8 text-midnight/80">{page.intro}</p>
-
-        {/* No cards. These are documents, so the headings carry the structure.
-            Body copy is capped in ch rather than px to hold a readable line
-            length whatever the viewport does. */}
-        <div className="mt-12 space-y-10">
-          {page.sections.map((section) => (
-            <article key={section.title}>
-              <h2 className="font-serif text-2xl text-midnight">{section.title}</h2>
-              <p className="mt-3 max-w-[68ch] leading-8 text-midnight/80">{section.body}</p>
-            </article>
-          ))}
-        </div>
-
-        <p className="mt-10 border-t border-midnight/10 pt-6 text-sm text-midnight/70">
-          Last updated {POLICY_LAST_UPDATED}. &copy; {currentYear} Niwangu. For formal legal or privacy
-          requests, email privacy@niwangu.com.
-        </p>
-      </div>
-    </section>
-  </motion.main>
-);
-
 export const SanctuaryGate: FC = () => {
   const setView = useSanctuaryStore((state) => state.setView);
   const currentYear = new Date().getFullYear();
   const testimonialTrackRef = useRef<HTMLDivElement>(null);
-  const footerPage = footerPages[window.location.pathname as keyof typeof footerPages];
 
   // One card plus the flex gap, so the arrows land on a card edge rather than
   // drifting out of alignment after a few presses.
@@ -461,9 +177,6 @@ export const SanctuaryGate: FC = () => {
     });
   };
 
-  if (footerPage) {
-    return <InfoPage page={footerPage} currentYear={currentYear} />;
-  }
 
   return (
     <motion.main

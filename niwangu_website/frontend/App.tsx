@@ -5,6 +5,9 @@ import { useSanctuaryStore } from "./store";
 import { AppNavigation } from "./components/AppNavigation";
 import { BrandLogo } from "./components/BrandLogo";
 import { MemberNotifications } from "./components/MemberNotifications";
+import { getInfoPage } from "./lib/infoPages";
+
+const InfoPage = lazy(() => import("./components/InfoPage").then((module) => ({ default: module.InfoPage })));
 
 const BoostPromoModal = lazy(() =>
   import("./components/BoostPromoModal").then((module) => ({
@@ -78,6 +81,7 @@ const BootScreen = ({ message }: { message: string }) => (
 );
 
 export default function App() {
+  const publicPage = getInfoPage(window.location.pathname);
   const {
     view,
     sessionReady,
@@ -103,9 +107,14 @@ export default function App() {
   );
 
   useEffect(() => {
+    if (publicPage) return;
     listenForAuthChanges();
     void initializeApp();
-  }, [initializeApp, listenForAuthChanges]);
+  }, [initializeApp, listenForAuthChanges, publicPage]);
+
+  if (publicPage) {
+    return <MotionConfig reducedMotion="user"><Suspense fallback={<BootScreen message="Opening document..." />}><InfoPage page={publicPage} /></Suspense></MotionConfig>;
+  }
 
   if (!sessionReady) {
     return <BootScreen message="Connecting..." />;

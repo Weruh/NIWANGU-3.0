@@ -1,3 +1,4 @@
+import { TERMS_VERSION, PRIVACY_VERSION } from './policies';
 import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
   ChatSession,
@@ -222,6 +223,7 @@ export const signOut = async () => {
 };
 
 export const signUpWithEmail = async (input: SignUpInput) => {
+  if (!input.acceptedTerms) throw new Error("Accept the Terms of Service before creating an account.");
   const supabase = getSupabase();
   const seekingGender = input.gender === "female" ? "male" : "female";
 
@@ -230,6 +232,10 @@ export const signUpWithEmail = async (input: SignUpInput) => {
     password: input.password,
     options: {
       data: {
+        // A signup acknowledgement, not an immutable audit log or an auth claim.
+        terms_version: TERMS_VERSION,
+        privacy_notice_version: PRIVACY_VERSION,
+        terms_accepted_at: new Date().toISOString(),
         full_name: input.fullName,
         age: input.age,
         gender: input.gender,
