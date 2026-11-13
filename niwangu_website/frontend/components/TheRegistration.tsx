@@ -19,6 +19,7 @@ export const TheRegistration: FC = () => {
   const [location, setLocation] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const formControls = useAnimation();
 
@@ -29,6 +30,7 @@ export const TheRegistration: FC = () => {
     const normalizedPassword = password;
     const parsedAge = Number(age);
     const validationErrors = [
+      !acceptedTerms ? 'Read and accept the Terms of Service and Community Guidelines to continue.' : '',
       normalizedName.length < 2 ? 'Full name must be at least 2 characters.' : '',
       !Number.isFinite(parsedAge) || parsedAge < 18 ? 'Age must be 18 or older.' : '',
       gender !== 'female' && gender !== 'male' ? 'Select your gender.' : '',
@@ -55,6 +57,7 @@ export const TheRegistration: FC = () => {
       location: location.trim(),
       email: normalizedEmail,
       password: normalizedPassword,
+      acceptedTerms,
     });
   };
 
@@ -87,9 +90,10 @@ export const TheRegistration: FC = () => {
           animate={formControls}
         >
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Full Name</label>
+            <label htmlFor="register-name" className="text-sm font-medium text-midnight/80">Full Name</label>
             <input
               type="text"
+              id="register-name"
               value={fullName}
               onChange={(e) => {
                 setFullName(e.target.value);
@@ -101,11 +105,12 @@ export const TheRegistration: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Age</label>
+            <label htmlFor="register-age" className="text-sm font-medium text-midnight/80">Age</label>
             <input
               type="number"
               inputMode="numeric"
               min={18}
+              id="register-age"
               value={age}
               onChange={(e) => {
                 setAge(e.target.value);
@@ -117,8 +122,9 @@ export const TheRegistration: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Gender</label>
+            <label htmlFor="register-gender" className="text-sm font-medium text-midnight/80">Gender</label>
             <select
+              id="register-gender"
               value={gender}
               onChange={(e) => {
                 setGender(e.target.value);
@@ -133,8 +139,9 @@ export const TheRegistration: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Town</label>
+            <label htmlFor="register-town" className="text-sm font-medium text-midnight/80">Town</label>
             <select
+              id="register-town"
               value={location}
               onChange={(e) => {
                 setLocation(e.target.value);
@@ -152,9 +159,10 @@ export const TheRegistration: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Email</label>
+            <label htmlFor="register-email" className="text-sm font-medium text-midnight/80">Email</label>
             <input
               type="email"
+              id="register-email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -166,9 +174,10 @@ export const TheRegistration: FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-midnight/80">Password</label>
+            <label htmlFor="register-password" className="text-sm font-medium text-midnight/80">Password</label>
             <input
               type="password"
+              id="register-password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -179,8 +188,16 @@ export const TheRegistration: FC = () => {
             />
           </div>
 
+          <div className="space-y-4 border-t border-midnight/15 pt-5 text-sm leading-6">
+            <p id="privacy-notice" className="text-midnight/80">Read our <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-sageDeep">Privacy Policy (opens in a new tab)</a> to understand how your profile, Ritual answers, photos, and messages are used.</p>
+            <div className="flex items-start gap-3">
+              <input id="accept-terms" type="checkbox" required checked={acceptedTerms} onChange={(event) => { setAcceptedTerms(event.target.checked); if (errors.length) setErrors([]); }} aria-describedby="privacy-notice" className="mt-1 h-5 w-5 shrink-0 accent-sageDeep" />
+              <label htmlFor="accept-terms">I am at least 18 and agree to the <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-sageDeep">Terms of Service</a> and <a href="/community-guidelines" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-sageDeep">Community Guidelines</a> (links open in new tabs).</label>
+            </div>
+          </div>
+
           {errors.length > 0 && (
-            <ul className="list-disc space-y-1 pl-5 text-sm text-red-800">
+            <ul role="alert" className="list-disc space-y-1 pl-5 text-sm text-red-800">
               {errors.map((message) => (
                 <li key={message}>{message}</li>
               ))}

@@ -167,6 +167,9 @@ export const AccountSettings = () => {
         </a>
         .
       </p>
+      <nav aria-label="Policies" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+        {[['Privacy Policy', '/privacy-policy'], ['Terms of Service', '/terms-of-service'], ['Refund Policy', '/refund-policy']].map(([label, href]) => <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline underline-offset-4 hover:text-sageDeep">{label}<span className="sr-only"> (opens in a new tab)</span></a>)}
+      </nav>
       {message && (
         <p role="status" className="text-sm">
           {message}

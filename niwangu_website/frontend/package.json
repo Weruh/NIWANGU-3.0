@@ -7,7 +7,8 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "npm run typecheck && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:policies": "node scripts/check-policies.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.104.0",

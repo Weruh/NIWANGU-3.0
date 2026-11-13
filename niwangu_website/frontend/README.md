@@ -109,3 +109,32 @@ The rose glass interface respects reduced motion and keeps failed decisions in p
 Configure the app URL and password-recovery redirect in Supabase Auth. Assign a
 trusted moderator through Auth app_metadata to operate the report queue. Browser
 notifications require permission and the app to be open; offline push is not included.
+
+## Policies and registration acknowledgement
+
+- `/privacy-policy`, `/terms-of-service`, and `/refund-policy` are public routes.
+  They render before auth initialisation and do not require backend configuration.
+- Policy content and revision identifiers live in `lib/policies.ts`; the shared
+  document layout is `components/InfoPage.tsx`. Help and community copy lives in
+  `lib/infoPages.ts`. Update the revision date/version and sitemap when publishing
+  a material revision.
+- Registration requires an unchecked terms/community acknowledgement and links
+  to the privacy notice separately. Signup sends `terms_version`,
+  `privacy_notice_version`, and `terms_accepted_at` in Auth user metadata.
+  This is a client-supplied signup acknowledgement, **not** an immutable audit
+  log, a server-enforced signup requirement, or a security/authorisation claim.
+  Existing members are not marked as having accepted the new version.
+- Checkout and account Settings link to the policies. The refund process is
+  support-led; this change does not introduce automatic refund processing.
+- Retention wording reflects the committed deletion flow: deleting a profile
+  cascades to its application payment rows. Payment providers can hold separate
+  records. Changing that behaviour requires reviewing both the schema and policy.
+- Run `npm run check:policies` for document rendering/link checks, public routing
+  checks without backend credentials, and a mocked signup payload check. No live
+  account or payment is created. These checks do not perform browser visual QA.
+
+Before publishing, the operator should verify the legal entity/contact details,
+listed support inboxes, actual provider regions and retention arrangements, and
+have the policies reviewed for the business's legal obligations. The documents
+avoid claiming specific infrastructure regions or fixed retention/response
+periods that are not established in this repository.

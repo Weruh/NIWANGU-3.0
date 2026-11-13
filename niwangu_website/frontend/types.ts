@@ -161,6 +161,7 @@ export interface RitualQuestion {
 }
 
 export interface SignUpInput {
+  acceptedTerms: boolean;
   fullName: string;
   age: number;
   gender: Gender;

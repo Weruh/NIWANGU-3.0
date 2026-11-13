@@ -378,6 +378,8 @@ export const ThePricing: FC = () => {
                     </p>
                   )}
 
+                  <p className="text-xs leading-6 text-midnight/80">One-time payment. No automatic renewal. By purchasing, you agree to the <a href="/terms-of-service#payments" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Terms of Service</a> and <a href="/refund-policy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Refund Policy</a> (open in new tabs).</p>
+
                   <Button
                     type="submit"
                     fullWidth
